@@ -1,0 +1,875 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Mavnn's blog</title>
+  <meta name="author" content="mavnn">
+
+  
+  <meta name="description" content="As part of a two day training course I&#39;m going to be putting together a bunch of material on how to run .NET Core code on kubernetes. It will &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <link rel="canonical" href="https://blog.mavnn.co.uk/blog/page/3/index.html">
+  <link href="/favicon.ico" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Mavnn's blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="https://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Fira+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Fira+Mono:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+<!-- Google Analytics -->
+<script>
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-37561687-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <a href="https://mavnn.co.uk"><img class="swirl-logo" src="/images/swirl.svg"/></a>
+  <h1><a href="/">Mavnn's blog</a></h1>
+  
+    <h2>Stuff from my brain</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="#" method="get" id="searchbox" >
+  <fieldset role="search">
+    <input type="hidden" id="site_query" value="site:blog.mavnn.co.uk" />
+    <input class="search" type="text" name="q" results="0" id="search_query" placeholder="Search"/>
+  </fieldset>
+</form>
+<ul class="main-navigation">
+  <li><a href="https://mavnn.co.uk">Main Site</a></li>
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/kubernetes-for-the-masses/">Kubernetes for the Masses</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-09-29T11:54:37+01:00" pubdate data-updated="true">Sep 29<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As part of <a href="/building-solid-systems-in-f-number/">a two day training course</a> I&#39;m going to be putting together a bunch of material on how to run .NET Core code on kubernetes.</p>
+
+<p>It will include things like:</p>
+
+<ul>
+<li>Setting up CI/automated builds</li>
+<li>Configuring ingress points (including ssl via self updating Let&#39;s Encrypt certs)</li>
+<li>Monitoring and metrics of the running system</li>
+</ul>
+
+<p>If you&#39;d have any interest in this material as a separate module (which wouldn&#39;t be F# specific), do get in touch. I&#39;d reckon it will become a one day course, either in house or hosted.</p>
+
+<p>As an aside, once the material has been battle tested a few times, I will also be putting together a &quot;base&quot; deployment repository - although it will have fair warning that Kubernetes is really still the kind of thing that requires you to understand it before you start pushing things onto it, not just cutting and pasting someone else&#39;s config.</p>
+
+<p>After all, you&#39;re the one who&#39;s going to get the phone call at 03:00&#8230;</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/functional-programming-in-the-wild/">Functional Programming in the Wild</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-09-18T11:49:58+01:00" pubdate data-updated="true">Sep 18<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Last week was the annual <a href="https://skillsmatter.com/conferences/8268-progressive-dot-net-2017">Progressive .Net</a> conference, hosted at <a href="https://skillsmatter.com">SkillsMatter</a>.</p>
+
+<p>It was a bit of a strange conference for me; I was invited to speak, and very much enjoyed meeting up with everyone but I also had a bunch of other work I needed to get done. That means that unlike some other conferences I won&#39;t be able to give much speaker feedback!</p>
+
+<p>However, there were a few sessions I managed to pay some attention to and some thoughts about my own that I&#39;d like to record - so here goes!</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/functional-programming-in-the-wild/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/building-solid-systems-in-f-number/">Building Solid Systems in F#</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-09-13T14:19:21+01:00" pubdate data-updated="true">Sep 13<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><blockquote>
+<p>Update: The original venue sold out - more tickets are available for the 8th - 9th March 2018 on <a href="https://www.eventbrite.co.uk/e/building-solid-systems-in-f-tickets-42416619250">EventBrite</a>!</p>
+</blockquote>
+
+<p>We are running another course, and I&#39;m officially stoked! Read on for the details&#8230;</p>
+
+<h2>Building Solid Systems in F#</h2>
+
+<p>Writing code is only the first part of putting software into production - to run, maintain and scale your product, you&#39;ll need to understand and design the overall system.</p>
+
+<p>This 2 day course will take you through best practice in both writing an F# based, distributed system and running it in production - including sensible inter-operation with components written in other languages.</p>
+
+<p>To fit this into 2 days, we&#39;ll need to make some opinionated decisions (such as using F#!), but many of the ideas and concepts will be transferable. </p>
+
+<h2>We&#39;ll cover:</h2>
+
+<ul class="org-ul">
+<li>Writing reliable code using F#&#8217;s unique language features</li>
+<li>Learn how to apply SOLID (like) principles in a functional style</li>
+<li>How to instrument distributed services</li>
+<li>Continuous Improvement: 
+<ul class="org-ul">
+<li>Unit testing</li>
+<li>Performance measurement</li>
+</ul></li>
+<li>Running distributed systems in development</li>
+<li>Deploying distributed systems to production</li>
+<li>Good practice in dependency management and code organization</li>
+</ul>
+
+<h2>You&#39;ll come away with:</h2>
+
+<p>
+A git repository of your completed work, which will include:
+</p>
+
+<ul class="org-ul">
+<li>Nicely instrumented, benchmarked and unit tested F# services</li>
+<li>A scripted, deterministic deployment process for the overall distributed system</li>
+<li>Real time centralized logging, metrics and health feedback from the system, whether running on the dev machine or in production</li>
+<li>Zero down time continuous deployment for the overall system</li>
+</ul>
+
+<h2>Prerequisites:</h2>
+
+<p>
+You need to have:
+</p>
+
+<ul class="org-ul">
+<li>a basic knowledge of F# syntax</li>
+<li>a reasonable background knowledge of software development</li>
+</ul>
+
+<p>
+You need to bring laptop with:
+</p>
+
+<ul class="org-ul">
+<li>a relatively recent F# development environment (you&#8217;ll need to be able to build dotnet core 2.0 apps)</li>
+<li>Minikube and kubectl installed</li>
+</ul>
+
+<p>
+We&#8217;ll also ask you to pre-download some code and containers in advance so that we can hit the ground running on the first day; we&#8217;ll pass you the details of that before the event. 
+</p>
+
+<h2>Is this a replacement for Level Up Your F#?</h2>
+
+<p>No; <a href="https://blog.mavnn.co.uk/level-up-your-f-number-skills/">Level Up Your F#</a> focussed on the details of the F# language, this course is focussed on building systems. We will be running Level Up Your F# again in the future.</p>
+
+<h2>Where/when will it happen?</h2>
+
+<p><del>At the <a href="https://wellcomecollection.org/">Wellcome Collection</a></del> Sold out!</p>
+
+<p><a href="https://www.theskiff.org/">The Skiff</a>, in Brighton on the 8th and 9th Manch 2018</p>
+
+<h2>Where can I get tickets?</h2>
+
+<p><a href="https://www.eventbrite.co.uk/e/building-solid-systems-in-f-tickets-42416619250">EventBrite</a> or email <a href="mailto:us@mavnn.co.uk">us@mavnn.co.uk</a> and we&#39;ll sort you out an invoice.</p>
+
+<h2>What have other people said about your courses?</h2>
+
+<p>Hassan Ezzahir, Lead developer (Contractor) at BNP Paribas</p>
+
+<blockquote>
+<p>I’ve been trying to learn F# for several years now and got almost all
+the existing books on the subjects.</p>
+
+<p>Yet, I felt there was a gap between my good understanding of the
+language and actually applying it on bigger “real” projects.</p>
+
+<p>Michael’s great training skills has enabled me to quickly practice some
+advanced topics I was less familiar with.</p>
+
+<p>With my newly acquired knowledge, I’m confident I will be able achieve
+some great (and fun) developments with F#</p>
+</blockquote>
+
+<p>Alexander Battisti, Senior Software Developer (Machine Learning) at Freeletics GmbH</p>
+
+<blockquote>
+<p>I found &quot;Level Up your F#&quot; a good course teaching advanced topics in
+F# that are commonly ignored or glossed over when you are on your own,
+but are useful enough so you shouldn&#39;t ignore them. The exercises were
+difficult in a good way and engaging. I definitely recommend the
+course for anybody after they took their first serious steps in
+learning F#.</p>
+</blockquote>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/system-dot-console-is-why-we-cant-have-nice-things/">System.Console Is Why We Can&#8217;t Have Nice Things</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-08-31T16:30:18+01:00" pubdate data-updated="true">Aug 31<span>st</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In writing a simple tutorial for this years <a href="https://skillsmatter.com/conferences/8268-progressive-dot-net-2017#program">Progressive .Net</a> I thought I&#39;d use the Console to allow some nice visual feedback with requiring a dependency.</p>
+
+<p>TD;LR: <code>System.Console</code> (at least on dotnet core 2.0) is not as threadsafe as you&#39;d hope, and means that writing any simple cross platform console UI is nearly impossible.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/system-dot-console-is-why-we-cant-have-nice-things/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/an-in-memory-message-bus-in-100-lines-or-less/">An in Memory Message Bus in 100 Lines or Less</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-08-17T15:15:43+01:00" pubdate data-updated="true">Aug 17<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In reimplementing an <a href="/process-management-in-easynetq/">EasyNetQ process manager</a> one of the things I wanted to keep from the original project was an in memory message bus that could be used for testing without requiring a running RabbitMQ server. The code has ended up being pleasingly short and also uses a few techniques that seemed interesting, so I thought I&#39;d document it here as part of the design process.</p>
+
+<p>Please note we&#39;re not going for a full re-implementation of RabbitMQ in memory here, but this does give us enough to do some useful testing!</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/an-in-memory-message-bus-in-100-lines-or-less/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/trying-dotnetcore-2-dot-0-with-f-number-today/">Trying .NET Core 2.0 With F# Today</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-08-16T11:15:20+01:00" pubdate data-updated="true">Aug 16<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Yesterday, I tried to use .NET Core for F# on day zero. A bit <s>brave</s>foolish, I know, but v2 was supposed to be the one with all the bugs ironed out.</p>
+
+<p>Short version: it&#39;s a lot better, but it&#39;s still easy to hit rough edges.</p>
+
+<p>Longer version: be very careful that you don&#39;t hit issues with versions. On MacOSX, I hit a series of road blocks which made yesterday much more painful than it should have been.</p>
+
+<ul>
+<li>If you&#39;re on a Mac, you&#39;ll need to update All The Things&trade; to get a reliable experience. And I don&#39;t just mean all the .NET Core things - full system update and <code>brew upgrade</code> are your friends</li>
+<li>Don&#39;t use templates. Not many of them have been updated to 2.0 yet, you get no warnings about the ones which haven&#39;t, and enough has changed that it is very hard to update them manually unless you are a .NET Core expert already. (If you are, I suspect you&#39;re not reading this guide).</li>
+<li>Don&#39;t try and update projects unless you know what you&#39;re doing; it cost me a lot of pain yesterday including bizarre internal compiler errors. On the happy news front, just copying across your actual code files works just fine.</li>
+<li>Don&#39;t try and use Visual Studio (yet) - I&#39;m not going to go into this one as I&#39;m mainly talking to Mac users, but there has been issues there.</li>
+</ul>
+
+<p>With all that said and done, if I skipped using any templates and stuck exclusively to the bundled project options, the actual experience of using <code>dotnet</code> is very pleasant.</p>
+
+<p>For example, setting up a brand new solution with library and test project looks something like below:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># Create solution file Project.New.sln in current directory</span>
+</span><span class='line'>dotnet new sln -n Project.New
+</span><span class='line'>
+</span><span class='line'><span class="c"># Create library project in directory Project.New.Library</span>
+</span><span class='line'><span class="c"># Default proj name is Project.New.Library.fsproj</span>
+</span><span class='line'>dotnet new classlib -o Project.New.Library -lang f#
+</span><span class='line'>
+</span><span class='line'><span class="c"># And again for test library</span>
+</span><span class='line'>dotnet new console -o Project.New.Library.Tests -lang f#
+</span><span class='line'>
+</span><span class='line'><span class="c"># Add projects to solution (can combine to a single line)</span>
+</span><span class='line'>dotnet sln add Project.New.Library/Project.New.Library.fsproj
+</span><span class='line'>dotnet sln add Project.New.Library.Tests/Project.New.Library.Tests.fsproj
+</span><span class='line'>
+</span><span class='line'><span class="c"># Set up test console app</span>
+</span><span class='line'><span class="nb">cd </span>Project.New.Library.Tests
+</span><span class='line'>dotnet add reference ../Project.New.Library/Project.New.Library.fsproj
+</span><span class='line'>dotnet add package Expecto
+</span><span class='line'><span class="c"># Update Program.fs to run tests (see https://github.com/haf/expecto#testing-hello-world)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+<p>At this point, running <code>dotnet run</code> in the test directory should run your example test, and running <code>dotnet build</code> from the solution directory should successfully build your nice, portable, shiny, .NET Core 2.0 code.</p>
+
+<p>Enjoy, and remember this post has a shelf life: hopefully issues like the template woes I had should disappear quickly as the eco-system catches up with the latest release.</p>
+
+<blockquote>
+<p>Thanks to Tim Preston for a minor correction to this post; our genius author had managed to copy and paste erroneous commands from his own command history&#8230;</p>
+</blockquote>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/process-management-in-easynetq/">Process Management in EasyNetQ</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-07-29T12:34:03+01:00" pubdate data-updated="true">Jul 29<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><blockquote>
+<p>Update! Check out <a href="/routemaster-master-your-messaging-routes/">RouteMaster</a> for a progress update on this.</p>
+</blockquote>
+
+<p>Back in 2015, I wrote about a <a href="https://blog.mavnn.co.uk/easynetq-process-management/">process manager</a> I&#39;d written over
+the top of <a href="http://easynetq.com/">EasyNetQ</a>. At the time it was released as open
+source, and I was pretty pleased with it. It allowed you to fairly quickly string
+together a managed work flow of services steps with built in state management for
+each work flow, and avoided many of the potential pitfalls of trying to build
+a request/response based system in situations where it isn&#39;t appropriate.</p>
+
+<p>Two years on, I&#39;ve learnt a lot about distributed system design and a lot about
+composing logic (<em>cough</em> monads <em>cough</em>) - and the original source is no longer
+available from my previous employers where it was written.</p>
+
+<p>Despite that, I&#39;ve had a lot of interest in the library in between, so I&#39;m
+embarking on a full, clean room, rewrite incorporating everything I&#39;ve learnt.
+This will also allow me to take advantage of the (very) recent move of EasyNetQ
+to be .netcore compatible to build the library against .NET Standard, providing
+a fully portable solution out of the box.</p>
+
+<p>As with EasyNetQ itself, the major focus of this project will be providing the
+best possible developer experience. This means that it will provide sensible
+defaults and will be opinionated in places.</p>
+
+<p>Where do you come into all of this? Well, we&#39;re looking for corporate sponsorship
+to help accelerate the development process and we&#39;re looking for testers to help
+build products with pre-release versions. In both cases you get to help to drive
+which opinions the library settles on, and as a corporate sponsor we&#39;ll also help
+you get up and running. Whether you&#39;re sponsoring or not, we&#39;d love you to get involved.</p>
+
+<p>And on a more general note, if you find you&#39;re pushing the boundaries of EasyNetQ
+in any way and you&#39;d like some help, I&#39;d be happy to set up training or consultancy
+for a bespoke solution for you as well. Drop a note to <a href="mailto://us@mavnn.co.uk">us@mavnn.co.uk</a>.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/deliberate-poster-fighting-imposter-syndrome/">Deliberate Poster: Fighting Imposter Syndrome</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-05-24T12:01:11+01:00" pubdate data-updated="true">May 24<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I first became aware of Imposter Syndrome via an excellent <a href="https://www.hanselman.com/blog/ImAPhonyAreYou.aspx">blog post by Scott Hanselman</a>, but it immediately struck true.
+I&#39;m a self taught programmer who dropped out of a Maths degree, and even now with years of experience that voice is there at the back of my head:</p>
+
+<ul>
+<li>&quot;You still make off by one errors, and you think you can train people?&quot;</li>
+<li>&quot;How could you have let that bug slip by? It&#39;s obvious, I thought you knew what you were doing?&quot;</li>
+<li>&quot;You want people to pay you for this? How exactly are you justifying that one to yourself?&quot;</li>
+</ul>
+
+<p>Normally I just try and tell it to shut up: everyone makes mistakes sometimes, I deliver stuff people get value from, etc.</p>
+
+<p>But a few days back, something interesting happened. I&#39;d hit a problem that looked like it should be simple, and I&#39;d been bashing my head against it for a couple of days.
+The imposter critic was out in force: &quot;call yourself a coder?&quot;. So I stepped back, took a deep breath, told the voice to stuff it and did the sensible thing. I asked my
+co-director (and wife) for help.</p>
+
+<p>Now, this isn&#39;t asking a random person off the street for assistance. She has a high level post-graduate degree in mathematics, is ridiculously good at spotting patterns and logical deduction
+and has done some programming in the past herself (of the type you do during a maths degree).</p>
+
+<p>It took me over an hour to explain what the actual problem was.</p>
+
+<p>And as I dived through the OO patterns, domain specific knowledge and implementation constraints that built up into this &quot;simple&quot; problem it occurred to me that maybe I
+had learnt something over the years. That maybe I wasn&#39;t as much of an imposter as the voice was trying to tell me. That possibly, just maybe, not being able to solve this
+problem, right here, right now, didn&#39;t make me less valuable as a person or less competent as a professional. That the very fact I <em>had this problem</em> was actually evidence
+that I had a clue what I was doing, or else I wouldn&#39;t have been able to get here.</p>
+
+<p>So, a technique for all the &quot;imposters&quot; out there when the voice fires up: be deliberate in reminding yourself that you&#39;re actually a poster. Don&#39;t fight the voice with
+generalities (even if they&#39;re true) - fight it with specifics.</p>
+
+<p>Even if the specifics are &quot;2 years ago I didn&#39;t know enough to get myself into this mess&quot;.</p>
+
+<p>And you know the bonus extra of this technique? It fights <a href="https://en.wikipedia.org/wiki/Dunning%E2%80%93Kruger_effect">Dunning-Kruger</a> too&#8230;</p>
+
+<p>I&#39;ll just be leaving this post lying around here so that my wife can post me a link to it next time I&#39;m in the imposter blues.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/managing-mutable-state-with-computational-expressions/">Managing Mutable State With Computational Expressions</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-04-25T23:55:29+01:00" pubdate data-updated="true">Apr 25<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In mixed paradigm languages such as F# and Scala you frequently end up using
+mutable APIs in your &quot;nice&quot; pure functional code. It might be because you&#39;re using
+a 3rd party library, or it might be for performance reasons - but either way it&#39;s very
+easy to make mistakes with mutable constructs when you&#39;re in a functional mind space, especially if you want to compose operations on instances of a mutable type.</p>
+
+<p>Let&#39;s have a look at one way of handling this issue: custom operations on 
+computational expressions. We&#39;ll take the Provided Types API for building
+types within a type provider as an example of an API to
+use, and see what we can do to wrap it.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/managing-mutable-state-with-computational-expressions/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+
+  <header>
+    
+      <h1 class="entry-title"><a href="/return-to-the-ivory-tower-video/">Return to the Ivory Tower Video</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2017-04-20T13:17:18+01:00" pubdate data-updated="true">Apr 20<span>th</span>, 2017</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As mentioned on the blog already, I had the opportunity to talk at this year&#39;s F# Exchange at <a href="https://skillsmatter.com/">skillsmatter</a>. As always, they&#39;ve done an excellent job on the video production, so if you&#39;re interested in what makes F# different from other programming languages have a watch of <a href="https://skillsmatter.com/skillscasts/9883-fixing-real-life-problems-from-the-ivory-tower">Fixing Real Life Problems From the Ivory Tower</a> (free log in required).</p>
+
+<p>If you like the talk and would like to learn more, these are also the subjects that I&#39;ll be covering in my recently announced <a href="/level-up-your-f-number-skills/">Level Up Your F#</a> course, which will be running for 2 days in London on the 15th-16th June.</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/blog/page/4/">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/blog/page/2/">Newer &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Hire the Author</h1>
+  <p>
+    Want some help in any of the areas you&#8217;ve read about? Hop across to
+    <a href="https://mavnn.co.uk">mavnn.co.uk</a> where you can hire the
+    author.
+  </p>
+</section>
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/working-from-home/">Working From Home, Pandemic Edition</a>
+      </li>
+    
+      <li class="post">
+        <a href="/free-probabilities/">Free Probabilities</a>
+      </li>
+    
+      <li class="post">
+        <a href="/shake-generated-files/">Shake: Generated Files</a>
+      </li>
+    
+      <li class="post">
+        <a href="/shake-linting/">Shake: Linting and Formatting</a>
+      </li>
+    
+      <li class="post">
+        <a href="/shake-the-intro/">Shake: The Intro</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/mavnn">@mavnn</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'mavnn',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2020 - mavnn -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+<script type="text/javascript">
+ (function() {
+   const searchbox = document.getElementById("searchbox");
+   const site_query = document.getElementById("site_query").value;
+   const search_query = document.getElementById("search_query");
+
+   searchbox.onsubmit = function() {
+     const q = encodeURIComponent(search_query.value);
+     document.location.assign("https://google.com/search?q=" + site_query + "+" + q);
+     return false;
+   };
+ })()
+</script>
+
+
+</body>
+</html>

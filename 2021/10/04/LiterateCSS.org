@@ -5,6 +5,8 @@ One of the benefits of writing my blog in Org-Mode in Emacs, is that my blog pos
 
 Well, in general Org-Mode injects a basic set of CSS into web pages as it exports them, but I'm planning to amend that slightly as I go forward. Meaning this blog post will be a bit of a living document, evolving over time. Hi, future me! Hope you like it.
 
+The biggest element I want to customize is the colouring of the code highlighting, but that's a task I'll continue an other day. First, the basics...
+
 Let's start with some basic legibility enhancements. Margin around the edges of the page, maximum width for huge monitors, slightly gray text to avoid excessive eye strain. (Note to future me: probably swap this to slightly off-white background and black text instead, which I find less of a punch in the face...)
 
 #+BEGIN_SRC css :tangle ../../../org.css
@@ -22,13 +24,18 @@ Let's start with some basic legibility enhancements. Margin around the edges of 
 Little bit more white space around titles, and a touch of colour.
 
 #+BEGIN_SRC css :tangle ../../../org.css
-  h1,
-  h2,
-  h3 {
-    line-height: 1.2;
-    font-family: sans-serif;
-    color: #228
-  }
+   h1,
+   h2 {
+      line-height: 1.2;
+      font-family: sans-serif;
+      color: #859900;
+      text-decoration: underline;
+   }
+   h3 {
+     line-height: 1.2;
+     font-family: sans-serif;
+     color: #859900;
+   }
 #+END_SRC
 
 And make sure that images are a decent size. I might drop this rule in the future; I'm not sure how universal it really is.

@@ -6,15 +6,19 @@ body {
   color: #222;
   padding: 0 10px;
   font-family: sans-serif;
-
 }
 
 h1,
-h2,
+h2 {
+   line-height: 1.2;
+   font-family: sans-serif;
+   color: #859900;
+   text-decoration: underline;
+}
 h3 {
   line-height: 1.2;
   font-family: sans-serif;
-  color: #228
+  color: #859900;
 }
 
 img {

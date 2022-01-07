@@ -1,11 +1,13 @@
-#+TITLE: Types in TypeScript
+#+TITLE: Why your TypeScript compiles, even when you told the compiler it shouldn't
 #+DATE: 2022-01-07
 
 /This blog post is written on the assumption that you have a working knowledge of TypeScript but have come to it from a strongly typed language. If that isn't true, it might not help you very much./
 
 ** These are not the types you are looking for
 
-If you're used to writing code in other strongly typed languages, TypeScript's compiler can have a few surprises ready for you. Sometimes it needs more information than you expect to decide what type something is, or could be. And sometimes it compiles code that you think you've written types to make illegal. This is the story of one such piece of code (simplified) and the epiphany about TypeScript it led me to.
+If you are used to writing code in other strongly typed programming languages, you may find that TypeScript's compiler will let you write code that looks illegal - but compiles just fine.
+
+This is the story of one such piece of code, and the epiphany it led me to: TypeScript isn't just structural typed, it is structurally typed based on the JavaScript representation its types, not their type definitions.
 
 ** The code
 

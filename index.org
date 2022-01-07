@@ -1,10 +1,17 @@
 #+TITLE: Mavnn Blog
 
-This is the blog of Michael Newton; I've been writing posts here for quite a while, and changed publishing strategy in September 2021. If you're looking for posts before then, check out [[./index_old.html][the old blog]].
+This is the blog of Michael Newton; I've been writing posts here for quite a while, and changed publishing strategy in September 2021. If you're looking for posts written before then, check out [[./index_old.html][the old blog]].
 
 * The Posts
 
+** 2022
+
+*** January
+    
+- [[file:2022/01/07/types-in-typescript.org][Types in TypeScript]]
+
 ** 2021
+   
 *** September
 
 - [[file:2021/10/04/LiterateCSS.org][Literate CSS]]

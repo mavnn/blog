@@ -1,17 +1,17 @@
-#+TITLE: Why your TypeScript compiles, even when you told the compiler it shouldn't
+#+TITLE: Why your Typescript compiles when you thought you were safe
 #+DATE: 2022-01-07
-
-/This blog post is written on the assumption that you have a working knowledge of TypeScript but have come to it from a strongly typed language. If that isn't true, it might not help you very much./
 
 ** These are not the types you are looking for
 
-If you are used to writing code in other strongly typed programming languages, you may find that TypeScript's compiler will let you write code that looks illegal - but compiles just fine.
+TypeScript's compiler will let you write code that looks illegal - but compiles just fine.
 
-This is the story of one such piece of code, and the epiphany it led me to: TypeScript isn't just structural typed, it is structurally typed based on the JavaScript representation its types, not their type definitions.
+This is the story of one such piece of code, and the epiphany it led me to: TypeScript doesn't use your type definitions to decide if a type is compatible, it uses the JavaScript that could represent that type.
+
+Let's walk through what that means.
 
 ** The code
 
-I'm writing some code to help make defining GraphQL resolvers a type safe experience. Earlier feedback for the win. You don't really need to know the details of GQL to follow this example though; all you need to know is that I have a type for defining the configuration of a resolver, and once certain information is supplied, I know the config is valid.
+I'm writing code to make defining GraphQL resolvers a type safe experience (earlier developer feedback for the win). You don't need to know the details of GQL to follow this example though; all you need to know is that I have a type for defining the configuration of a resolver, and once certain information is supplied, I know the config is valid.
 
 Let's have a look at some code:
 
@@ -36,7 +36,7 @@ class Config<T extends ConfigValid> {
 }
 #+END_SRC
 
-Pop quiz: ~Config.make~ always return a ~Config<"invalid">~, and ~Config.build~ only takes a ~Config<"valid">~. Will the code ~Config.build(Config.make())~ compile or not?
+Pop quiz: ~Config.make~ always returns a ~Config<"invalid">~, and ~Config.build~ only takes a ~Config<"valid">~. Will the code ~Config.build(Config.make())~ compile or not?
 
 Given I'm asking, you've probably guessed that it *does* compile, breaking the intuition of all of your strongly typed language experience. The actually interesting bit is... why?!
 
@@ -155,6 +155,8 @@ You see that ~_isValid~ field? Now we're storing a value in that field, and that
 
 ** That's a wrap
 
-I hope you've enjoyed this little journey into making[[https://blog.janestreet.com/effective-ml-revisited/][ making illegal states unrepresentable]], and if you think you could enjoy this kind of thing (or even using the results to just build stuff!) I'm currently working with Blissfully and we're [[https://www.blissfully.com/careers/][currently hiring]] (it says backend developers, but we're also hiring for our Elm frontend where making illegal states unrepresentable is even easier...).
+I hope you've enjoyed this little journey into making [[https://blog.janestreet.com/effective-ml-revisited/][making illegal states unrepresentable]], and if you think you could enjoy this kind of thing (or even using the results to just build stuff!) I'm currently working with Blissfully and we're [[https://www.blissfully.com/careers/][currently hiring]] (it says backend developers, but we're also hiring for our Elm frontend where making illegal states unrepresentable is even easier...).
 
 If you feel a burning need to comment on this post, or suggest a correction, you can [[https://github.com/mavnn/blog/blob/master/2022/01/07/types-in-typescript.org][submit suggestions for changes]] (GitHub account required). Just hit the "edit this file button" and go from there.
+
+With special thanks to [[https://twitter.com/mech_elephant][Matthew Griffith]] and [[https://twitter.com/aaronwhite][Aaron White]] for reading, pushing for and suggesting a stronger title and introductory paragraph.

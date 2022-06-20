@@ -6,10 +6,14 @@ This is the blog of Michael Newton; I've been writing posts here for quite a whi
 
 ** 2022
 
+*** June
+
+- [[file:2022/06/20/teaching-coding-wisdom.org][Teaching (coding) wisdom]]
+
 *** January
     
 - [[file:2022/01/07/types-in-typescript.org][Why your Typescript compiles when you thought you were safe]]
-
+  
 ** 2021
    
 *** September

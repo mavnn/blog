@@ -6,16 +6,20 @@ This is the blog of Michael Newton; I've been writing posts here for quite a whi
 
 ** 2022
 
+*** October
+
+- [[file:2022/10/14/adhd_and_me.org][ADHD and me]]
+
 *** June
 
 - [[file:2022/06/20/teaching-coding-wisdom.org][Teaching (coding) wisdom]]
 
 *** January
-    
+
 - [[file:2022/01/07/types-in-typescript.org][Why your Typescript compiles when you thought you were safe]]
-  
+
 ** 2021
-   
+
 *** September
 
 - [[file:2021/10/04/LiterateCSS.org][Literate CSS]]

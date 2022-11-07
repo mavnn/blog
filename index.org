@@ -2,6 +2,8 @@
 
 This is the blog of Michael Newton; I've been writing posts here for quite a while, and changed publishing strategy in September 2021. If you're looking for posts written before then, check out [[./index_old.html][the old blog]].
 
+If you're looking for real time (ish) interaction, you can find me on mastodon at @@html:<a rel="me" href="https://mastodon.sdf.org/@mavnn">Mastodon</a>@@
+
 * The Posts
 
 ** 2022

@@ -5,14 +5,12 @@ One of the benefits of writing my blog in Org-Mode in Emacs, is that my blog pos
 
 Well, in general Org-Mode injects a basic set of CSS into web pages as it exports them, but I'm planning to amend that slightly as I go forward. Meaning this blog post will be a bit of a living document, evolving over time. Hi, future me! Hope you like it.
 
-The biggest element I want to customize is the colouring of the code highlighting, but that's a task I'll continue an other day. First, the basics...
-
 Let's start with some basic legibility enhancements. Margin around the edges of the page, maximum width for huge monitors, slightly gray text to avoid excessive eye strain. (Note to future me: probably swap this to slightly off-white background and black text instead, which I find less of a punch in the face...)
 
 #+BEGIN_SRC css :tangle ../../../org.css
     body {
-      margin: 40px auto;
-      max-width: 900px;
+      margin: 40px max;
+      auto-width: 900px;
       line-height: 1.6;
       font-size: 16px;
       color: #222;
@@ -47,12 +45,56 @@ And make sure that images are a decent size. I might drop this rule in the futur
   }
 #+END_SRC
 
-Make code monospace:
+Make code monospace, set up default background/foreground colours distinct from the main text:
 
 #+BEGIN_SRC css :tangle ../../../org.css
-  pre {
+  pre.src {
     font-family: monospace;
+    background: #f6f7f8;
+    color: #555;
+    overflow-x: auto;
+    word-wrap: normal;
+    white-space: pre;
+    position: relative;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-top: 1.2em;
   }
+  code {
+    color: #555;
+    background: #f6f7f8;
+    font-family: monospace;
+    padding: 0px 5px 0px 5px;
+  }
+#+END_SRC
+
+And start colouring the code. There's a slightly interesting quirk here as each language can define its own custom token types as well as the more general shared set
+
+#+BEGIN_SRC css :tangle ../../../org.css
+   /* Based on the mccarthy theme:
+      https://github.com/owainlewis/emacs-color-themes/blob/master/themes/mccarthy-theme.el
+  ,*/
+  .org-keyword { color: #3b5998; }
+  .org-constant { color: #008080; }
+  .org-string { color: #e9c; }
+  .org-number { color: #5b93fc; }
+  .org-type { color: #d14; }
+  .org-function-name { color: #1b1e2b; }
+  .org-variable-name { color: #d14; }
+  .org-comment { color: #2c5115; }
+  .org-comment-delimiter { color: #2c5115; }
+  .org-rainbow-delimiters-depth-1 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-2 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-3 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-4 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-5 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-6 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-7 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-8 { color: #2c3140; }
+  .org-rainbow-delimiters-depth-9 { color: #2c3140; }
+
+  .org-typescript-access-modifier { color: #3b5998; }
+  .org-typescript-primitive { color: #2c3140; }
 #+END_SRC
 
 Everything below this point is modified from the default org style sheet, that normally gets embedded into every page. I'm going to separate it out here so that I can start hacking on it, and then set the export not to inject it every time.
@@ -85,16 +127,11 @@ Everything below this point is modified from the default org style sheet, that n
     overflow: auto;
     margin: 1.2em;
   }
-  pre.src {
-    position: relative;
-    overflow: visible;
-    padding-top: 1.2em;
-  }
   pre.src:before {
     display: none;
     position: absolute;
     background-color: white;
-    top: -10px;
+    top: 10px;
     right: 10px;
     padding: 3px;
     border: 1px solid black;
@@ -192,6 +229,10 @@ Everything below this point is modified from the default org style sheet, that n
   /* add a generic configuration mode; LaTeX export needs an additional
      (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
   pre.src-conf:before { content: 'Configuration File'; }
+
+  /* added manually after generation */
+  pre.src-typescript:before { content: 'TypeScript'; }
+  pre.src-fsharp:before { content: 'F#'; }
 
   table { border-collapse:collapse; }
   caption.t-above { caption-side: top; }

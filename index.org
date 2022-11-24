@@ -8,6 +8,10 @@ If you're looking for real time (ish) interaction, you can find me on @@html:<a 
 
 ** 2022
 
+*** November
+
+- [[file:2022/11/24/typescript_enums_and_serialization.org][TypeScript enums and (de)serialization]]
+
 *** October
 
 - [[file:2022/10/14/adhd_and_me.org][ADHD and me]]

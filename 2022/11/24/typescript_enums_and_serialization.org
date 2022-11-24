@@ -114,3 +114,6 @@ So there you have it: a safe way to deserialize strings into enums, and it even
 composes nicely into more complex decoders.
 
 Until next time!
+
+Want to comment on something you've read here? [[https://mastodon.sdf.org/@mavnn/109400451463740531][This mastodon post]] is the
+official commenting point!

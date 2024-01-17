@@ -1,0 +1,119 @@
+#+TITLE: TypeScript Enums and Serialization
+#+DATE:<2022-11-24 Thu>
+#+SUBTITLE: Been looking for type safe ways to decode a string into a enum in TypeScript? This would be the blog post for you.
+
+In general, TypeScript is [[file:~/Blog/2022/10/14/adhd_and_me.org][not its own language]] - it's a set of annotations that
+can be added to JavaScript to help check the "correctness" of you program. The
+authors have been very reluctant to add features to TypeScript that don't exist
+in JavaScript, and so normally you can turn your TypeScript into JavaScript purely
+by /deleting/ the type annotations that you've added.
+
+Enums, though, are a bit different. They actually generate JavaScript code based on
+the TypeScript you write. Today, we're going to look at a piece of code that allows
+you to deserialize enums with string values in a type safe manner. And we're going
+to take advantage of the fact that enums (according to the TypeScript compiler) are
+both a type, and a value with a different type - at the same time.
+
+For context, we're going to be using [[https://www.npmjs.com/package/schemawax][SchemaWax]] to create our decoder, so we can
+build it into a larger contextual decoder as needed.
+
+First: the code! If you already know SchemaWax, you don't care about types, and
+you're here because it was a hit for "deserialize any enum" on Google this is
+the bit to cut and paste.
+
+#+BEGIN_SRC typescript
+import * as D from "schemawax"
+
+// This is only type safe if passed a Enum with string values.
+// I don't think there's anyway to stop someone passing { "boo": "broken" }
+// in TypeScripts type system :(
+// At least this stops us from rewriting the same unsafe code every time though.
+export const stringEnumDecoder = <Enum extends { [name: string]: string }>(
+  targetEnum: Enum,
+): D.Decoder<Enum[keyof Enum]> => D.literalUnion(...Object.values(targetEnum)) as D.Decoder<Enum[keyof Enum]>
+#+END_SRC
+
+That's it. The whole thing. How do you use it?
+
+Like this:
+
+#+BEGIN_SRC typescript
+import * as D from "schemawax"
+import { stringEnumDecoder } from "./enum"
+
+enum TestEnum1 {
+  "why" = "would",
+  "anyone" = "do",
+  "this" = "!",
+}
+
+type ObjectWithEnumField = {
+  testEnum: TestEnum1
+  name: string
+  age?: number
+}
+
+describe("stringEnumDecoder", () => {
+  it("decodes string enums", () => {
+    const result = stringEnumDecoder(TestEnum1).forceDecode("!")
+    expect(result).toEqual(TestEnum1.this)
+  })
+  it("rejects invalid enum values", () => {
+    const result = stringEnumDecoder(TestEnum1).decode("this")
+    expect(result).toBeNull()
+  })
+
+  it("can be used in larger decoders", () => {
+    const objectDecoder: D.Decoder<ObjectWithEnumField> = D.object({
+      required: {
+        testEnum: stringEnumDecoder(TestEnum1),
+        name: D.string,
+      },
+      optional: {
+        dateOfBirth: D.string.andThen((str) => new Date(str)),
+      },
+    })
+
+    const inputFromApi = `{ "testEnum": "!", "name": "bob", "dateOfBirth": "2022-11-24"}`
+    const result1 = objectDecoder.decode(JSON.parse(inputFromApi))
+    expect(result1).toEqual({ testEnum: TestEnum1.this, name: "bob", dateOfBirth: new Date("2022-11-24") })
+  })
+})
+#+END_SRC
+
+How does this work? How can we write a function that can take an enum type as an
+argument, and then generate a decoder? (Feel free to drop out if you were just
+here to solve your immediate problem!)
+
+If you type an enum into the online TypeScript playground ([[https://www.typescriptlang.org/play?#code/KYOwrgtgBAYg9nKBvAUFKB5EwoF4oBEc2BANGlACoDui+BALrWSgL4pA][here's one I prepared
+earlier]]), you'll see that the enum (with string values) is, in fact, compiled
+into a variable that ends up with a simple record with string keys and values
+attached to it.
+
+Going back to the implementation, you'll see that's exactly the constraint on
+the argument we pass into `stringEnumDecoder`.
+
+#+BEGIN_SRC typescript
+...
+export const stringEnumDecoder = <Enum extends { [name: string]: string }>(... rest of implementation)
+#+END_SRC
+
+Then some slightly weird magic happens: when you pass an enum into the function,
+the TypeScript compiler infers that the type of the argument is the `typeof` the
+enum you passed in. Whatever is happening internally here, it keeps track of the
+fact that the keys of this type are the types of the valid enum cases, so it
+turns `Enum[keyof Enum]` into the union type of each of the possible enum value
+types which is, if you squint hard enough, actually the enum itself. We then
+return a decoder that accepts a string, checks that said string is actually one
+of the /values/ stored in the enum object, and then tells the compiler that this
+decoder will only ever return valid enum values. Unfortunately with a cast - but
+the full context we need to check this cast is valid is contained within this
+one line of code.
+
+So there you have it: a safe way to deserialize strings into enums, and it even
+composes nicely into more complex decoders.
+
+Until next time!
+
+Want to comment on something you've read here? [[https://mastodon.sdf.org/@mavnn/109400451463740531][This mastodon post]] is the
+official commenting point!

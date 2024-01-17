@@ -1,0 +1,7 @@
+#+INCLUDE: ./blurb.inc.org
+- [[file:./2022/11/24/typescript_enums_and_serialization.org][TypeScript Enums and Serialization]] (2022-11-24)
+- [[file:./2022/10/14/adhd_and_me.org][ADHD and me]] (2022-10-14)
+- [[file:./2022/06/20/teaching-coding-wisdom.org][Teaching (coding) wisdom]] (2022-06-20)
+- [[file:./2022/01/07/types-in-typescript.org][Why your Typescript compiles when you thought you were safe]] (2022-01-07)
+- [[file:./2021/10/04/LiterateCSS.org][Literate CSS]] (2021-10-04)
+- [[file:./2021/09/22/NewBeginnings.org][New Beginnings]] (2021-09-22)

@@ -1,0 +1,17 @@
+#+TITLE: Teaching (coding) wisdom
+#+DATE:<2022-06-20 Mon>
+#+SUBTITLE: Teaching good decision making in code, is basically the same as teaching good decision making of any other kind. It's the teaching of wisdom.
+
+#+begin_quote
+[talking about the teaching of wisdom]
+
+There are these distillations that we get throughout the story, like in the ten commandments or in the Sermon on the Mount. At points, it’s very clear: “Don’t murder.” “Honor your ma and pa.” “Do to others what you want them to do to you.” But if you really think about it, you don’t want a list. You might want a list for a certain season that will train your moral compass. Then, when you confront really complex situations, like Joshua or Moses, and it’s not clear, and there’s no list, you’ve been shaped to be the kind of person who knows how to figure out the right way forward. Lists will not help you do that. Wisdom will help you do that.
+
+--- https://bibleproject.com/podcast/wisdom-lifes-complexity/
+#+end_quote
+
+Listening to the podcast above earlier and thinking that it feels very similar to how to teach good coding practices. We use the short hand of rules, and lists of recommendations… sometimes. But that doesn’t teach you how to deal with the complex situations, the edge cases, the actual real problems that need solving.
+
+The flip side being that as soon as you’re guided by wisdom, by the stories of what works, the shaping of thinking, you start getting into interpretation and ambiguity because you’re actually needing to think about the decisions you’re making. It can become hard to explain why you’re doing things, and different experiences will have coloured the “wisdom” that you’ve formed over the years. Which is why it becomes so important to have a variety of backgrounds and a willingness to communicate in a technical team that’s actually going to get things done. Why the lists and rules (microservices rule the world! TDD is the one true way! pure code is the only real code!) only get you so far, and should be starting points - not ending points.
+
+If you'd like to comment on this post, or suggest a correction, you can [[https://github.com/mavnn/blog/blob/master/2022/06/20/teaching-coding-wisdom.org][submit suggestions for changes]] (GitHub account required). Just hit the "edit this file button" and go from there - or log an issue on the repository.

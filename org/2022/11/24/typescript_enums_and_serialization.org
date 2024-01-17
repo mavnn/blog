@@ -91,7 +91,7 @@ into a variable that ends up with a simple record with string keys and values
 attached to it.
 
 Going back to the implementation, you'll see that's exactly the constraint on
-the argument we pass into `stringEnumDecoder`.
+the argument we pass into ~stringEnumDecoder~.
 
 #+BEGIN_SRC typescript
 ...
@@ -99,10 +99,10 @@ export const stringEnumDecoder = <Enum extends { [name: string]: string }>(... r
 #+END_SRC
 
 Then some slightly weird magic happens: when you pass an enum into the function,
-the TypeScript compiler infers that the type of the argument is the `typeof` the
+the TypeScript compiler infers that the type of the argument is the ~typeof~ the
 enum you passed in. Whatever is happening internally here, it keeps track of the
 fact that the keys of this type are the types of the valid enum cases, so it
-turns `Enum[keyof Enum]` into the union type of each of the possible enum value
+turns ~Enum[keyof Enum]~ into the union type of each of the possible enum value
 types which is, if you squint hard enough, actually the enum itself. We then
 return a decoder that accepts a string, checks that said string is actually one
 of the /values/ stored in the enum object, and then tells the compiler that this

@@ -1,6 +1,5 @@
 #+TITLE: TypeScript Enums and Serialization
 #+DATE:<2022-11-24 Thu>
-#+SUBTITLE: Been looking for type safe ways to decode a string into a enum in TypeScript? This would be the blog post for you.
 
 In general, TypeScript is [[file:~/Blog/2022/10/14/adhd_and_me.org][not its own language]] - it's a set of annotations that
 can be added to JavaScript to help check the "correctness" of you program. The

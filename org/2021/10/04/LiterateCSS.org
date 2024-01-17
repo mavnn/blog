@@ -1,6 +1,5 @@
 #+TITLE: Literate CSS
 #+DATE:<2021-10-04 Mon>
-#+SUBTITLE: Building my blog in my blog; step one, a literate CSS file.
 
 One of the benefits of writing my blog in Org-Mode in Emacs, is that my blog posts are a functional literate programming environment. Which is pretty handy for keeping track of things like "how does my CSS work", for example.
 

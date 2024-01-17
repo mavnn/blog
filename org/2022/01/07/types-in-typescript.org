@@ -1,6 +1,5 @@
 #+TITLE: Why your Typescript compiles when you thought you were safe
 #+DATE:<2022-01-07 Fri>
-#+SUBTITLE: What actually is TypeScript, and how does that change our understanding of what a TypeScript type is?
 
 ** These are not the types you are looking for
 

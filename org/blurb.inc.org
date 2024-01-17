@@ -1,5 +1,4 @@
 #+TITLE: Mavnn's Blog
-#+SUBTITLE: My very own corner of the interwebs.
 
 This is the blog of Michael Newton; I've been writing posts here for quite a while, and changed publishing strategy in September 2021. If you're looking for posts written before then, check out [[./index_old.html][the old blog]].
 

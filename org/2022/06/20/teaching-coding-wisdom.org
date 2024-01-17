@@ -1,6 +1,5 @@
 #+TITLE: Teaching (coding) wisdom
 #+DATE:<2022-06-20 Mon>
-#+SUBTITLE: Teaching good decision making in code, is basically the same as teaching good decision making of any other kind. It's the teaching of wisdom.
 
 #+begin_quote
 [talking about the teaching of wisdom]

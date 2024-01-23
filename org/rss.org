@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2022/11/24/typescript_enums_and_serialization.html
 :PUBDATE: 2022-11-24
-:ID:       3B5A64C9-C77B-40CE-8DD6-10DE468C87F5
+:ID:       528A5FA5-DC62-403A-9379-336ABFBDB014
 :END:
 #+index: TypeScript!Deserializing enums safely
 
@@ -127,7 +127,7 @@ official commenting point!
 :PROPERTIES:
 :RSS_PERMALINK: 2022/10/14/adhd_and_me.html
 :PUBDATE: 2022-10-14
-:ID:       F2159B37-644E-4C83-9770-8E4AD5C0725F
+:ID:       4CE89529-7C27-483C-92DD-BD8D1787C74E
 :END:
 This morning, I did the washing up.
 
@@ -195,7 +195,7 @@ version.
 :PROPERTIES:
 :RSS_PERMALINK: 2022/06/20/teaching-coding-wisdom.html
 :PUBDATE: 2022-06-20
-:ID:       5642B2C9-E3B2-4BB3-AB3E-194426BD749F
+:ID:       CDD034DB-37AF-48CB-9AE8-8AEF0DC39A32
 :END:
 #+begin_quote
 [talking about the teaching of wisdom]
@@ -214,13 +214,13 @@ If you'd like to comment on this post, or suggest a correction, you can [[https:
 :PROPERTIES:
 :RSS_PERMALINK: 2022/01/07/types-in-typescript.html
 :PUBDATE: 2022-01-07
-:ID:       41587E1C-C0E9-4A3E-AD60-D86975219110
+:ID:       D6E23A8A-B4FB-4519-B67C-63B6EABE696B
 :END:
 #+index: TypeScript!Why unsafe code compiles
 
 ** These are not the types you are looking for
 :PROPERTIES:
-:ID:       BE4630FE-9062-4A09-8F0D-661230CBA492
+:ID:       995F5F93-2A3F-434A-A95D-4461A836237B
 :END:
 
 TypeScript's compiler will let you write code that looks illegal - but compiles just fine.
@@ -231,7 +231,7 @@ Let's walk through what that means.
 
 ** The code
 :PROPERTIES:
-:ID:       0D59527A-D443-4090-88D1-95021ECFB2C5
+:ID:       58877A50-E266-4410-8865-E3465899AAEB
 :END:
 
 I'm writing code to make defining GraphQL resolvers a type safe experience (earlier developer feedback for the win). You don't need to know the details of GQL to follow this example though; all you need to know is that I have a type for defining the configuration of a resolver, and once certain information is supplied, I know the config is valid.
@@ -267,7 +267,7 @@ Why?
 
 ** What actually /is/ TypeScript anyway?
 :PROPERTIES:
-:ID:       5B1B9734-8682-4CF1-B5E2-C95DBAF4D780
+:ID:       5783333A-6B82-4499-9431-033075EA096E
 :END:
 
 Don't get whiplash, I'm going somewhere with this.
@@ -286,7 +286,7 @@ TypeScript has been designed to make demonstrating correctness as easy as possib
 
 ** Erm... what's this got to do with the code above?
 :PROPERTIES:
-:ID:       E878F89F-BD65-425A-A831-D53A4435A12F
+:ID:       34EC9D6E-CBBF-4051-B3ED-DA5533AED73D
 :END:
 
 We're not there yet. Stage 2 in our journey is structural typing.
@@ -319,15 +319,15 @@ Notice a few things here:
 
 ** That syntax is horrific; turns out this is a deliberate choice to discourage overuse (see the rest of the bullets for why)
 :PROPERTIES:
-:ID:       42C199A5-FD2F-4EA2-8742-CDDCC280DE21
+:ID:       3A5D489D-630B-4A6E-A555-9061365B87D0
 :END:
 ** I had to add the ~inline~ keyword to get it to compile. This literally means that in each place this method is used, the compiler will inline a version that uses the type inferred in that location in the code base. This can be good or bad.
 :PROPERTIES:
-:ID:       D8FE33C5-109B-41FB-AB42-20034B5B6FE3
+:ID:       483CFFBD-63C5-4EB2-927E-C5A22DC01BFE
 :END:
 ** You can probably imagine that the error messages from this type of code become explosively unreadable if you nest several layers of functions using this technique, and the constraints start to grow. F# can no longer tell you "you need to give my a ~FirstRecord~"; instead it has to resort to "here's a list of constraints, find me something that meets them all."
 :PROPERTIES:
-:ID:       D6205C90-0493-493C-877D-0FFD861BC461
+:ID:       FC9FC362-1A33-407A-A814-C85806B45597
 :END:
 
 This is structural typing, checking types based on the type of data that they hold. And here we wrap back around to TypeScript, which always uses structural typing. 
@@ -338,7 +338,7 @@ In F#, we're comparing the *type definition* to the constraints. But in TypeScri
 
 ** The mystery resolved
 :PROPERTIES:
-:ID:       9288408A-FD00-4417-A955-B34A978D2742
+:ID:       25DC8346-E1ED-49C3-B966-98F5E6FD1B47
 :END:
 
 Back to our code:   
@@ -372,7 +372,7 @@ The generic parameter on the type is not used or stored at runtime (i.e. in Java
 
 ** But: the safety?!
 :PROPERTIES:
-:ID:       5EB4BBF5-3CCB-4958-95E9-E292C44B17CE
+:ID:       9A8A560B-2569-47ED-AB99-4552393D0CAD
 :END:
 
 Okay, so the code above doesn't work. But now we know what the problem actually is, so... let's fix it!
@@ -405,7 +405,7 @@ You see that ~_isValid~ field? Now we're storing a value in that field, and that
 
 ** That's a wrap
 :PROPERTIES:
-:ID:       331B4EA9-E12D-4A05-9795-93B4A3C12229
+:ID:       47B8C935-A5BB-4B7A-8F5B-76EE637762A1
 :END:
 
 I hope you've enjoyed this little journey into making [[https://blog.janestreet.com/effective-ml-revisited/][making illegal states unrepresentable]], and if you think you could enjoy this kind of thing (or even using the results to just build stuff!) I'm currently working with Blissfully and we're [[https://www.blissfully.com/careers/][currently hiring]] (it says backend developers, but we're also hiring for our Elm frontend where making illegal states unrepresentable is even easier...).
@@ -413,246 +413,3 @@ I hope you've enjoyed this little journey into making [[https://blog.janestreet.
 If you feel a burning need to comment on this post, or suggest a correction, you can [[https://github.com/mavnn/blog/blob/master/2022/01/07/types-in-typescript.org][submit suggestions for changes]] (GitHub account required). Just hit the "edit this file button" and go from there.
 
 With special thanks to [[https://twitter.com/mech_elephant][Matthew Griffith]] and [[https://twitter.com/aaronwhite][Aaron White]] for reading, pushing for and suggesting a stronger title and introductory paragraph.
-* Literate CSS
-:PROPERTIES:
-:RSS_PERMALINK: 2021/10/04/LiterateCSS.html
-:PUBDATE: 2021-10-04
-:ID:       A2BC2B4C-50B0-4E41-A4E1-99EE41ED47EE
-:END:
-One of the benefits of writing my blog in Org-Mode in Emacs, is that my blog posts are a functional literate programming environment. Which is pretty handy for keeping track of things like "how does my CSS work", for example.
-
-Well, in general Org-Mode injects a basic set of CSS into web pages as it exports them, but I'm planning to amend that slightly as I go forward. Meaning this blog post will be a bit of a living document, evolving over time. Hi, future me! Hope you like it.
-
-We're going to cheat a bit and use a "classless CSS framework" ([[https://github.com/kognise/water.css][water.css]] is going to be my first attempt). This means we can remove a lot of default styling, and focus only on the more specific classes org adds.
-
-Let's make sure that images are a decent size. I might drop this rule in the future; I'm not sure how universal it really is.
-
-#+begin_src css :tangle ../../../../static/org.css
-  img {
-    width: 750px;
-    border-radius: 10px;
-  }
-#+end_src
-
-Code colouring. There's a slightly interesting quirk here as each language can define its own custom token types as well as the more general shared set.
-
-#+begin_src css :tangle ../../../../static/org.css
-  /* This class is applied to a wrapper div around code blocks */
-  .org-src-container {
-      border: 1px black;
-      color: #555;
-      background-color: #f6f7f9;
-      word-wrap: normal;
-      overflow-x: auto;
-      padding: 8pt;
-  }
-  pre.src {
-      font-family: monospace;
-      position: relative;
-      white-space: pre;
-  }
-   /* Based on the mccarthy theme:
-      https://github.com/owainlewis/emacs-color-themes/blob/master/themes/mccarthy-theme.el
-  ,*/
-  .org-keyword { color: #3b5998; }
-  .org-constant { color: #008080; }
-  .org-string { color: #e9c; }
-  .org-number { color: #5b93fc; }
-  .org-type { color: #d14; }
-  .org-function-name { color: #1b1e2b; }
-  .org-variable-name { color: #d14; }
-  .org-comment { color: #2c5115; }
-  .org-comment-delimiter { color: #2c5115; }
-  .org-rainbow-delimiters-depth-1 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-2 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-3 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-4 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-5 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-6 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-7 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-8 { color: #2c3140; }
-  .org-rainbow-delimiters-depth-9 { color: #2c3140; }
-
-  .org-typescript-access-modifier { color: #3b5998; }
-  .org-typescript-primitive { color: #2c3140; }
-#+end_src
-
-Everything below this point is modified from the default org style sheet, that normally gets embedded into every page. I'm going to separate it out here so that I can start hacking on it, and then set the export not to inject it every time.
-
-#+begin_src css :tangle ../../../../static/org.css
-  .todo   { font-family: monospace; color: red; }
-  .done   { font-family: monospace; color: green; }
-  .priority { font-family: monospace; color: orange; }
-  .tag    { background-color: #eee; font-family: monospace;
-            padding: 2px; font-size: 80%; font-weight: normal; }
-  .timestamp { color: #bebebe; }
-  .timestamp-kwd { color: #5f9ea0; }
-  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
-  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
-  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
-  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
-  p.verse { margin-left: 3%; }
-  pre.src:before {
-    display: none;
-    position: absolute;
-    background-color: white;
-    top: 10px;
-    right: 10px;
-    padding: 3px;
-    border: 1px solid black;
-  }
-  pre.src:hover:before { display: inline;}
-  /* Languages per Org manual */
-  pre.src-asymptote:before { content: 'Asymptote'; }
-  pre.src-awk:before { content: 'Awk'; }
-  pre.src-C:before { content: 'C'; }
-  /* pre.src-C++ doesn't work in CSS */
-  pre.src-clojure:before { content: 'Clojure'; }
-  pre.src-css:before { content: 'CSS'; }
-  pre.src-D:before { content: 'D'; }
-  pre.src-ditaa:before { content: 'ditaa'; }
-  pre.src-dot:before { content: 'Graphviz'; }
-  pre.src-calc:before { content: 'Emacs Calc'; }
-  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
-  pre.src-fortran:before { content: 'Fortran'; }
-  pre.src-gnuplot:before { content: 'gnuplot'; }
-  pre.src-haskell:before { content: 'Haskell'; }
-  pre.src-hledger:before { content: 'hledger'; }
-  pre.src-java:before { content: 'Java'; }
-  pre.src-js:before { content: 'Javascript'; }
-  pre.src-latex:before { content: 'LaTeX'; }
-  pre.src-ledger:before { content: 'Ledger'; }
-  pre.src-lisp:before { content: 'Lisp'; }
-  pre.src-lilypond:before { content: 'Lilypond'; }
-  pre.src-lua:before { content: 'Lua'; }
-  pre.src-matlab:before { content: 'MATLAB'; }
-  pre.src-mscgen:before { content: 'Mscgen'; }
-  pre.src-ocaml:before { content: 'Objective Caml'; }
-  pre.src-octave:before { content: 'Octave'; }
-  pre.src-org:before { content: 'Org mode'; }
-  pre.src-oz:before { content: 'OZ'; }
-  pre.src-plantuml:before { content: 'Plantuml'; }
-  pre.src-processing:before { content: 'Processing.js'; }
-  pre.src-python:before { content: 'Python'; }
-  pre.src-R:before { content: 'R'; }
-  pre.src-ruby:before { content: 'Ruby'; }
-  pre.src-sass:before { content: 'Sass'; }
-  pre.src-scheme:before { content: 'Scheme'; }
-  pre.src-screen:before { content: 'Gnu Screen'; }
-  pre.src-sed:before { content: 'Sed'; }
-  pre.src-sh:before { content: 'shell'; }
-  pre.src-sql:before { content: 'SQL'; }
-  pre.src-sqlite:before { content: 'SQLite'; }
-  /* additional languages in org.el's org-babel-load-languages alist */
-  pre.src-forth:before { content: 'Forth'; }
-  pre.src-io:before { content: 'IO'; }
-  pre.src-J:before { content: 'J'; }
-  pre.src-makefile:before { content: 'Makefile'; }
-  pre.src-maxima:before { content: 'Maxima'; }
-  pre.src-perl:before { content: 'Perl'; }
-  pre.src-picolisp:before { content: 'Pico Lisp'; }
-  pre.src-scala:before { content: 'Scala'; }
-  pre.src-shell:before { content: 'Shell Script'; }
-  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
-  /* additional language identifiers per "defun org-babel-execute"
-       in ob-*.el */
-  pre.src-cpp:before  { content: 'C++'; }
-  pre.src-abc:before  { content: 'ABC'; }
-  pre.src-coq:before  { content: 'Coq'; }
-  pre.src-groovy:before  { content: 'Groovy'; }
-  /* additional language identifiers from org-babel-shell-names in
-     ob-shell.el: ob-shell is the only babel language using a lambda to put
-     the execution function name together. */
-  pre.src-bash:before  { content: 'bash'; }
-  pre.src-csh:before  { content: 'csh'; }
-  pre.src-ash:before  { content: 'ash'; }
-  pre.src-dash:before  { content: 'dash'; }
-  pre.src-ksh:before  { content: 'ksh'; }
-  pre.src-mksh:before  { content: 'mksh'; }
-  pre.src-posh:before  { content: 'posh'; }
-  /* Additional Emacs modes also supported by the LaTeX listings package */
-  pre.src-ada:before { content: 'Ada'; }
-  pre.src-asm:before { content: 'Assembler'; }
-  pre.src-caml:before { content: 'Caml'; }
-  pre.src-delphi:before { content: 'Delphi'; }
-  pre.src-html:before { content: 'HTML'; }
-  pre.src-idl:before { content: 'IDL'; }
-  pre.src-mercury:before { content: 'Mercury'; }
-  pre.src-metapost:before { content: 'MetaPost'; }
-  pre.src-modula-2:before { content: 'Modula-2'; }
-  pre.src-pascal:before { content: 'Pascal'; }
-  pre.src-ps:before { content: 'PostScript'; }
-  pre.src-prolog:before { content: 'Prolog'; }
-  pre.src-simula:before { content: 'Simula'; }
-  pre.src-tcl:before { content: 'tcl'; }
-  pre.src-tex:before { content: 'TeX'; }
-  pre.src-plain-tex:before { content: 'Plain TeX'; }
-  pre.src-verilog:before { content: 'Verilog'; }
-  pre.src-vhdl:before { content: 'VHDL'; }
-  pre.src-xml:before { content: 'XML'; }
-  pre.src-nxml:before { content: 'XML'; }
-  /* add a generic configuration mode; LaTeX export needs an additional
-     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
-  pre.src-conf:before { content: 'Configuration File'; }
-
-  /* added manually after generation */
-  pre.src-typescript:before { content: 'TypeScript'; }
-  pre.src-fsharp:before { content: 'F#'; }
-
-  caption.t-above { caption-side: top; }
-  caption.t-bottom { caption-side: bottom; }
-  th.org-right  { text-align: center;  }
-  th.org-left   { text-align: center;   }
-  th.org-center { text-align: center; }
-  td.org-right  { text-align: right;  }
-  td.org-left   { text-align: left;   }
-  td.org-center { text-align: center; }
-  .footpara { display: inline; }
-  .footdef  { margin-bottom: 1em; }
-  .figure { padding: 1em; }
-  .figure p { text-align: center; }
-  .equation-container {
-    display: table;
-    text-align: center;
-    width: 100%;
-  }
-  .equation {
-    vertical-align: middle;
-  }
-  .equation-label {
-    display: table-cell;
-    text-align: right;
-    vertical-align: middle;
-  }
-  .inlinetask {
-    padding: 10px;
-    border: 2px solid gray;
-    margin: 10px;
-    background: #ffffcc;
-  }
-  #org-div-home-and-up
-   { text-align: right; font-size: 70%; white-space: nowrap; }
-  .linenr { font-size: smaller }
-  .code-highlighted { background-color: #ffff00; }
-  .org-info-js_info-navigation { border-style: none; }
-  #org-info-js_console-label
-    { font-size: 10px; font-weight: bold; white-space: nowrap; }
-  .org-info-js_search-highlight
-    { background-color: #ffff00; color: #000000; font-weight: bold; }
-  .org-svg { width: 90%; }
-#+end_src
-* New Beginnings
-:PROPERTIES:
-:RSS_PERMALINK: 2021/09/22/NewBeginnings.html
-:PUBDATE: 2021-09-22
-:ID:       535CA763-45E7-4C27-9546-A020C5D99363
-:END:
-This is just a short test; I'm beginning to publish my blog via Emacs Org mode rather than Jekyll because... well, because I don't enjoy updating Ruby, and blogging is something that I (partially) do for my own relaxation and enjoyment.
-
-So... welcome to the new blog. To those few of you subscribed to my blog as a feed, apologies for the largely content free post.
-
-If this works I'll be updating as I go along with actual posts, as well as the obligatory posts on how the blog works and why I've set it up as I'm planning to.
-
-Remind me why every developer feels the need to do that, again?
-
-If you feel a burning need to comment on this post, or suggest a correction, you can [[https://github.com/mavnn/blog/blob/master/2021/09/22/NewBeginnings.org][submit suggestions for changes]] (GitHub account required). Just hit the "edit this file button" and go from there.

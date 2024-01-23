@@ -1,4 +1,4 @@
 * T
   - TypeScript
-    - [[id:3B5A64C9-C77B-40CE-8DD6-10DE468C87F5][Deserializing enums safely]]
-    - [[id:41587E1C-C0E9-4A3E-AD60-D86975219110][Why unsafe code compiles]]
+    - [[id:528A5FA5-DC62-403A-9379-336ABFBDB014][Deserializing enums safely]]
+    - [[id:D6E23A8A-B4FB-4519-B67C-63B6EABE696B][Why unsafe code compiles]]

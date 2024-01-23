@@ -1,5 +1,7 @@
 #+TITLE: Why your Typescript compiles when you thought you were safe
 #+DATE:<2022-01-07 Fri>
+#+OPTIONS: toc:2
+#+INDEX: TypeScript!Why unsafe code compiles
 
 ** These are not the types you are looking for
 
@@ -42,7 +44,7 @@ Given I'm asking, you've probably guessed that it *does* compile, breaking both 
 
 Why?
 
-** What actually _is_ TypeScript anyway?
+** What actually /is/ TypeScript anyway?
 
 Don't get whiplash, I'm going somewhere with this.
 
@@ -96,7 +98,7 @@ This is structural typing, checking types based on the type of data that they ho
 
 The question is: /what/ are we comparing to see if things are structurally compatible? And this is where my intuition was broken.
 
-In F#, we're comparing the _type definition_ to the constraints. But in TypeScript, we're comparing the _JavaScript representation of the type_ to the constraints /because TypeScript exists to make JavaScript safer/, not to be a programming language in its own right.
+In F#, we're comparing the *type definition* to the constraints. But in TypeScript, we're comparing the *JavaScript representation of the type* to the constraints /because TypeScript exists to make JavaScript safer/, not to be a programming language in its own right.
 
 ** The mystery resolved
 

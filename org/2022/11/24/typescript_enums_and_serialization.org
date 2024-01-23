@@ -1,7 +1,8 @@
 #+TITLE: TypeScript Enums and Serialization
 #+DATE:<2022-11-24 Thu>
+#+INDEX: TypeScript!Deserializing enums safely
 
-In general, TypeScript is [[file:~/Blog/2022/10/14/adhd_and_me.org][not its own language]] - it's a set of annotations that
+In general, TypeScript is [[../../../2022/01/07/types-in-typescript.org][not its own language]] - it's a set of annotations that
 can be added to JavaScript to help check the "correctness" of you program. The
 authors have been very reluctant to add features to TypeScript that don't exist
 in JavaScript, and so normally you can turn your TypeScript into JavaScript purely

@@ -7,13 +7,38 @@ Well, in general Org-Mode injects a basic set of CSS into web pages as it export
 
 We're going to cheat a bit and use a "classless CSS framework" ([[https://github.com/kognise/water.css][water.css]] is going to be my first attempt). This means we can remove a lot of default styling, and focus only on the more specific classes org adds.
 
-Let's make sure that images are a decent size. I might drop this rule in the future; I'm not sure how universal it really is.
+My nice little "go home" header needs some CSS to get it looking as cute as I'd want it.
 
 #+BEGIN_SRC css :tangle ../../../../static/org.css
-  img {
-    width: 750px;
+  img.home-logo {
+    width: 50px;
+    height: 50px;
+    padding: 3px;
+    background: white;
     border-radius: 10px;
   }
+
+  #org-div-home-and-up {
+    font-size: 70%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+#+END_SRC
+
+I prefer my main page title to have some kind of dividing line from the rest of the page. At the moment, that means just a plain line underneath but I may do something more imaginative in the future.
+
+#+BEGIN_SRC css :tangle ../../../../static/org.css
+  header::after {
+    content: "";
+    display: block;
+    height: 1px;
+    width: 100%;
+    background: var(--text-bright); /* from color.css */
+  }
+
 #+END_SRC
 
 Code colouring. There's a slightly interesting quirk here as each language can define its own custom token types as well as the more general shared set.
@@ -212,8 +237,6 @@ Everything below this point is modified from the default org style sheet, that n
     margin: 10px;
     background: #ffffcc;
   }
-  #org-div-home-and-up
-   { text-align: right; font-size: 70%; white-space: nowrap; }
   .linenr { font-size: smaller }
   .code-highlighted { background-color: #ffff00; }
   .org-info-js_info-navigation { border-style: none; }

@@ -1,0 +1,81 @@
+#+TITLE: Short term help
+
+These days I generally work longer term contracts, which means I'm not often available for the more immediate "pay money for a solved problem" services I could offer while I was consulting. Right now though, I'm between long term contracts.
+
+"But Michael," I hear you say, "what problems can I give you money to solve to avoid distracting my own amazing team from actually *building the product*?"
+
+I'm so glad you asked. Or, you know, you can just skip straight to the [[Logistics][logistics]] section if you already know what you want.
+
+#+TOC: headlines 2
+
+* The kinds of things I can do for you
+
+** Build, packaging, and continuous integration
+
+I have spent a /lot/ of time getting build, test, and deployment pipelines up and running. A lot of the advice out there assumes you are using one technology and that you can just use "the build tool" for that stack. Reality tends to be more complicated than that, with many projects involving multiple languages, code generation, and extensive test set up.
+
+What kind of things would a CI/CD process I help build give you? It depends on /your/ needs, but things that have really helped in other places include:
+
+- Making sure that CI/CD is managed *in the code repository* so that running the build locally and on the build server does the same thing in the same way, and the build can evolve in a safe, version controlled way just like all your other code
+- Helping trace and encode the /real/ dependencies in your code base to unlock incremental, cachable build steps and reduce overall build times with concurrency
+- Split your test suite so tests can be run in parallel (yes, even integration tests) and then aggregate the results
+- Use tools like Nix or multi-step docker/podman builds to create minimal containers that only contain what they really need
+  - bonus extra: doing this with Nix also gives you development environments as code and reproducible deployment artifacts - same code in, same container out
+
+** Architecture review
+
+Putting together a new project, or have a code base that's moving from "minimum viable" to "oh - I've got customers"? I can review your plans, or, given your constraints and objectives I can put together a suggested system architecture for you.
+
+It's worth noting that I don't have a personal axe to grind here. I won't tell you to use a "clean" architecture because that's my thing, or to use microservices because they are fashionable. Different architectural styles exist for a reason, and each has its own trade offs in terms of constraints you accept to gain certain benefits.
+
+This is a bit of a hybrid service that includes aspects of [[Technology evaluation][technology evaluation]], [[Code review][code review]], and [[Domain driven design coaching][domain driven design coaching]] but zoomed out to look at "how do I put this all together."
+
+** Code review
+
+For ecosystems I've built decent sized projects in (.NET, TypeScript) I can spend some time reviewing your code and pointing out things you may want to improve.
+
+This isn't the kind of code review you'd do on an individual PR: this is the kind of code review where I can (as an outsider) come in with fresh eyes and point out broader patterns in your code base that may be problematic. I can also help you take your conventions and "traditions" and turn them into a coding style guide with (in many cases) automated tooling to help the team put it into practice.
+
+** Technology evaluation
+
+Considering buying a new service, picking up a new programming language, or changing to a new database library? I can do the research and evaluation you need: I've been helping drive technology choices in organizations for well over a decade now and can help you spot the good, the bad, and the ugly of the options you're considering.
+
+** Domain driven design coaching
+
+At its heart, the promise of domain driven design is simple: a code base that uses the same language as the people using it do, so that developers and domain experts can accurately share understanding of what the code /should/ do and why.
+
+Actually /doing/ domain driven design is not simple at all, because it is a process to help you model reality and it turns out [[http://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail][reality has a surprising amount of detail]].
+
+I can help with the process of getting started with DDD, help lead the early exploratory meetings between developers and domain experts, and give advice at how to capture what you discover in code while keeping everything maintainable.
+
+** Event sourcing
+
+Event sourcing is a technique for capturing all the events that "have happened" and using those to calculate the current state of your system.
+
+For example, if a customer of yours moves you may publish a ~CustomerHasMoved~ event when they tell you, and a ~CustomerAddressHasChanged~ event when you have finished the business process that manages customers moving.
+
+This has enormous benefits for auditing, for being able to look at how the system has changed over time, and for being able to fix bugs "retroactively" as you don't only have the current state of the system but also all of the steps that got you here.
+
+It /also/ requires a slightly different way of thinking about your code base and some specific tooling to avoid a system that slows down over time. And it affects how you think about business constraints like data retention and [[https://www.dataprotection.ie/en/individuals/know-your-rights/right-erasure-articles-17-19-gdpr][the right to erasure]].
+
+As the saying goes: been there, done that. I can help you do it too.
+
+** Teach property based testing
+
+I'm a huge fan of property based testing, and I'm more than happy to give interactive workshops on getting started with it in .NET, TypeScript, and probably other languages if you ask nicely. Why pay for this when you could download a conference talk about it for free (including ones I've given myself)? Because I'll use a piece of /your/ code to get started with, so that you walk away with an up and running example in your code base and we all talk about the reality of doing this rather than seeing the nice, easy, examples you tend to be shown in a 45 minute talk.
+
+** Build a tool/library
+
+I do just write good code as well. If you need a self contained library or a small solution built, I can do that for you.
+
+* Logistics
+
+Let's cover the basics. Neither of us has time to waste, so I'm going to keep this blunt and simple:
+
+- I will /always/ want to have an extensive conversation(s) and will normally want to provide a quote before starting a short term piece of work. Book a slot to talk on [[https://calendly.com/mavnn/1-hour-slot][Calendly]] or just send me an email (michael at mavnn.eu)
+- I currently live in Italy, about an hour away from Rome. I can offer all of the services above remotely. Asking me to attend in person will add travel costs and at least 2 billable days of my time. Note: in some situations this is totally worthwhile.
+- My day rate runs at 1000 euros per day for short term work like this, but in general I will use that to generate a quote and then charge you for the work delivered rather than bill by unit time. I never bill by the hour; I will consider discounts for non-profits, educational sites, friends, etc. It it's easier for you, I can give a quote that includes all expenses (travel etc) rather than reclaiming them separately. (Hint: if you're in a large organization and this is the first time you're arranging to get a consultant in - /this will be easier for you/)
+  - If you are in the EU, note that I am VAT registered
+- In the rare occasion where it turns out that I cannot deliver what I promised (I'm just one human - things like illness can happen) I will let you know promptly, and before the work is due to be delivered, so we can renegotiate where to go from the reality of the situation.
+
+That's about everything, I think.

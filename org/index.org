@@ -1,5 +1,4 @@
 #+INCLUDE: ./blurb.inc.org
-- [[file:./2024/01/25/short_term_help.org][Short term help]] (2024-01-25)
 - [[file:./2022/11/24/typescript_enums_and_serialization.org][TypeScript Enums and Serialization]] (2022-11-24)
 - [[file:./2022/10/14/adhd_and_me.org][ADHD and me]] (2022-10-14)
 - [[file:./2022/06/20/teaching-coding-wisdom.org][Teaching (coding) wisdom]] (2022-06-20)

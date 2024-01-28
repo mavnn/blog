@@ -26,6 +26,14 @@ My nice little "go home" header needs some CSS to get it looking as cute as I'd 
     justify-content: flex-end;
     gap: 10px;
   }
+
+  /* positioning only, the rest of the header styling is defined in the default water css below */
+  #my-contacts {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
 #+END_SRC
 
 I prefer my main page title to have some kind of dividing line from the rest of the page. At the moment, that means just a plain line underneath but I may do something more imaginative in the future.

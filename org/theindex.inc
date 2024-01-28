@@ -1,3 +1,3 @@
 * T
   - TypeScript
-    - [[id:25A417F1-F678-4037-B93D-16B65721E8FA][Deserializing enums safely]]
+    - [[id:A34C4E15-A416-42BE-9B5B-B27BC7064FCF][Deserializing enums safely]]

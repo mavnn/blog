@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/26/writing_a_cv.html
 :PUBDATE: 2024-01-26
-:ID:       E6F63076-9CB5-4C57-B5DA-6CBE64C387F5
+:ID:       AE4D8274-76C3-4DF9-971A-7E95BEB11952
 :END:
 A while back (/checks notes, gulps/) I wrote a fairly successful [[https://blog.mavnn.co.uk/good-developer-cvs/][blog post on the types of CVs]] I liked receiving as one of the people screening technical applications, and some of the mistakes I was seeing applicants making.
 
@@ -29,7 +29,7 @@ One slight caveat: I did include my LinkedIn profile, which has all the gritty d
 :PROPERTIES:
 :RSS_PERMALINK: 2022/11/24/typescript_enums_and_serialization.html
 :PUBDATE: 2024-01-24
-:ID:       25A417F1-F678-4037-B93D-16B65721E8FA
+:ID:       A34C4E15-A416-42BE-9B5B-B27BC7064FCF
 :END:
 #+index: TypeScript!Deserializing enums safely
 
@@ -152,7 +152,7 @@ official commenting point!
 :PROPERTIES:
 :RSS_PERMALINK: 2022/10/14/adhd_and_me.html
 :PUBDATE: 2022-10-14
-:ID:       C96C33D5-7FFE-46D8-A17E-3CEBFB1C13B3
+:ID:       7E3B9E08-5F7E-4674-A310-5B313913DC2C
 :END:
 This morning, I did the washing up.
 
@@ -220,7 +220,7 @@ version.
 :PROPERTIES:
 :RSS_PERMALINK: 2022/06/20/teaching-coding-wisdom.html
 :PUBDATE: 2022-06-20
-:ID:       4EBEBC14-5CE7-4C89-A1A3-9E9B40D2C7AB
+:ID:       F8145816-EEC2-42D1-8B41-D75C9029B443
 :END:
 #+begin_quote
 [talking about the teaching of wisdom]

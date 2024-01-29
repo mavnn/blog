@@ -1,6 +1,6 @@
 #+TITLE: Mavnn's Blog
 
-This is the blog of Michael Newton; I've been writing posts here for quite a while, and changed publishing strategy in September 2021. If you're looking for posts written before then, check out [[./index_old.html][the old blog]].
+This is the blog of Michael Newton; I've been writing posts here for quite a while, and changed publishing strategy in September 2021. If you're looking for posts written before then, check out @@html:<a hx-boost="false" href="/index_old.html">the old blog</a>@@.
 
 If you're looking for real time (ish) interaction, you can find me on @@html:<a rel="me" href="https://mastodon.sdf.org/@mavnn">Mastodon</a>@@
 

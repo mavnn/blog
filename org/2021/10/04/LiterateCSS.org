@@ -27,16 +27,9 @@ My nice little "go home" header needs some CSS to get it looking as cute as I'd 
     gap: 10px;
   }
 
-  /* positioning only, the rest of the header styling is defined in the default water css below */
-  #my-contacts {
-    display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
 #+END_SRC
 
-I prefer my main page title to have some kind of dividing line from the rest of the page. At the moment, that means just a plain line underneath but I may do something more imaginative in the future.
+Adding some horizontal rules helps keep sections separate.
 
 #+BEGIN_SRC css :tangle ../../../../static/org.css
   header::after {
@@ -47,6 +40,24 @@ I prefer my main page title to have some kind of dividing line from the rest of 
     background: var(--text-muted); /* from color.css */
   }
 
+  /* The class given to divs containing a top level org heading */
+  .outline-2 {
+    border-top: 1px solid #dbdbdb;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+#+END_SRC
+
+Keeping the minimalist footer neat:
+
+#+BEGIN_SRC css :tangle ../../../../static/org.css
+  /* positioning only, the rest of the header styling is defined in the default water css below */
+  #my-contacts {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 20px;
+  }
 #+END_SRC
 
 Code colouring. There's a slightly interesting quirk here as each language can define its own custom token types as well as the more general shared set.

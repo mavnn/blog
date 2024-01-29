@@ -1,0 +1,128 @@
+#+TITLE: Short term help
+#+OPTIONS: num:t
+
+These days I generally work longer term contracts, which means I'm not often available for the more immediate "pay money for a solved problem" services I could offer while I was consulting. Right now though, I'm between long term contracts.
+
+"But Michael," I hear you say, "what problems can I give you money to solve so that I can avoid distracting my own amazing team from actually *building the product*?"
+
+I'm so glad you asked. Or, you know, you can just skip straight to the [[Logistics][logistics]] section if you already know what you want.
+
+#+TOC: headlines 2
+
+* Consulting
+
+** Build, packaging, and continuous integration
+:PROPERTIES:
+:ID:       8FD25D59-031C-438A-8623-FB1F7DFF0E82
+:END:
+
+I have spent a /lot/ of time getting build, test, and deployment pipelines up and running. Most of the advice out there assumes that you are using one technology and you can just use "the build tool" for that stack. Reality tends to be more complicated than that, with many projects involving multiple languages, code generation, and extensive test set up.
+
+What kind of things could your CI/CD process do for you? It depends on /your/ needs, but things that have really helped in other places include:
+
+- Making sure that CI/CD is managed *in the code repository* so that running the build locally and on the build server does the same thing in the same way, and the build can evolve in a safe, version controlled way just like the rest of your code
+- Helping trace and encode the /real/ dependencies in your code base to unlock incremental, cachable build steps and reduce overall build times with concurrency
+- Split your test suite so tests can be run in parallel (yes, even integration tests) and then aggregate the results
+- Use tools like Nix or multi-step docker/podman builds to create minimal containers that only contain what they really need
+  - bonus extra: doing this with Nix also gives you development environments as code and reproducible deployment artifacts - same code in, same container out
+
+If this is a new product/project and you just want someone to make all these considerations go away I can also build you [[*Build a project skeleton][a project skeleton]] with everything set up and ready to go for your preferred CI provider and deployment environment.
+
+** Architecture review
+:PROPERTIES:
+:ID:       66D42273-20E9-4571-9E3E-2437E9173D2B
+:END:
+
+Putting together a new project, or have a code base that's moving from "minimum viable" to "oh - I've got customers"? I can review your plans, or, given your constraints and objectives I can put together a suggested system architecture for you.
+
+It's worth noting that I don't have a personal axe to grind here. I won't tell you to use a "clean" architecture because that's my thing, or to use microservices because they are fashionable. Different architectural styles exist for a reason, and each has its own trade offs in terms of constraints you choose to accept in order to gain certain benefits.
+
+I have the advantage of having helped architect and design solutions in a variety of styles in production environments.
+
+This is a bit of a hybrid service that includes aspects of [[Technology evaluation][technology evaluation]], [[Code audit][code audit]], and [[Technology evaluation][technology evaluation]] but zoomed out to look at "how do I put this all together."
+
+** Code audit
+:PROPERTIES:
+:ID:       B7BDA429-6D17-46FD-B712-86B750E1C3A9
+:END:
+
+For ecosystems I've built decent sized projects in (.NET, TypeScript) I can spend some time reviewing your code and pointing out things you may want to improve.
+
+This isn't the kind of code review you'd do on an individual PR: this is the kind of code review where I can (as an outsider) come in with fresh eyes and point out broader patterns in your code base that may be problematic. I can also help you take your conventions and "traditions" and turn them into a coding style guide with (in many cases) automated tooling to help the team put it into practice.
+
+** Technology evaluation
+:PROPERTIES:
+:ID:       E0CFE33C-7348-4459-A534-800B83DDE672
+:END:
+
+Considering buying a new service, picking up a new programming language, or changing to a new database library? I can do the research and evaluation you need based on your requirements. I've been helping drive technology choices in organizations for well over a decade now, and I can help you spot the good, the bad, and the ugly of the options you're considering. I may even be aware of options you haven't considered.
+
+* Workshops and training
+
+Unlike more general consultancy, workshops on topics I know well such as the ones below are a fairly fixed commitment. If you're considering using your training budget, you can assume around 2500 euros/day for up to 6 people online. In person will increase the cost but allows for groups of up to 10 people.
+
+I have also offered bespoke training courses in the past (examples: giving a team of Ruby developers a 5 day crash course in everything they needed to know to take over maintenance of a .NET code base, tailored to the project in question) but that requires significant preparation and a quote.
+
+** Domain driven design coaching
+:PROPERTIES:
+:ID:       DB44E6D2-DCF4-4997-B326-5B4E4D0B89C4
+:END:
+
+At its heart, the promise of domain driven design is simple: a code base that uses the same language as the people using it do, so that developers and domain experts can accurately share understanding of what the code /should/ do and why.
+
+Actually /doing/ domain driven design is not simple at all, because it is a process to help you model reality and it turns out [[http://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail][reality has a surprising amount of detail]].
+
+I can help with the process of getting started with DDD, help lead the early exploratory meetings between developers and domain experts, and give advice on how to capture what you discover in code while keeping everything maintainable.
+
+** Event sourcing
+:PROPERTIES:
+:ID:       F06E5183-9787-4C2F-8473-7013F31998F2
+:END:
+
+Event sourcing is a technique for capturing all the events that "have happened" and using those to calculate the current state of your system.
+
+For example, if a customer of yours moves you may publish a ~CustomerHasMoved~ event when they tell you, and a ~CustomerAddressHasChanged~ event when you have finished the business process that manages customers moving.
+
+This has enormous benefits for auditing, for being able to look at how the system has changed over time, and for being able to fix bugs "retroactively" as you don't only have the current state of the system but also all of the steps that got you here.
+
+It /also/ requires a slightly different way of thinking about your code base and some specific tooling to avoid a system that slows down over time. And it affects how you think about business constraints like data retention and [[https://www.dataprotection.ie/en/individuals/know-your-rights/right-erasure-articles-17-19-gdpr][the right to erasure]].
+
+As the saying goes: been there, done that. I can help you do it too.
+
+** Teach property based testing
+:PROPERTIES:
+:ID:       C4BBFDE6-9DAC-472E-9B19-7A48317298E8
+:END:
+
+I'm a huge fan of property based testing, and I'm more than happy to give interactive workshops on getting started with it in .NET, TypeScript, and probably other languages if you ask nicely. Why pay for this when you could download a conference talk about it for free (including ones I've given myself)? Because I'll use a piece of /your/ code to get started with you will walk away with an up and running example in your code base. This will keep us focused on the reality of doing property based testing in practice rather than seeing the nice, easy, examples you tend to be shown in a 45 minute talk.
+
+* Bespoke software creation
+
+** Build a tool/library
+:PROPERTIES:
+:ID:       E7E0899B-3812-47AF-8F1B-DE29456F500E
+:END:
+
+I do just write good code as well. If you need a self contained library or a small solution built, I can do that for you. Whether it is parsing an obscure data format, efficient immutable directed graph data structures, or just a nice F# wrapper around a dotnet library, I will make sure it fits the style you're asking for and is well tested. Significant discounts apply if the results are going to be released under an open source licence.
+
+** Build a project skeleton
+:PROPERTIES:
+:ID:       3AC61BA9-2E22-4737-9FCE-ADA321234F5E
+:END:
+
+If you're starting a green field project, I can create a "skeleton" repository with a managed developer environment, CI/CD and testing story set up and ready to use. You and your team get to start with actually writing your product.
+
+* Logistics
+:PROPERTIES:
+:ID:       1AC24D36-F2CC-4484-B158-758BFABCCFAB
+:END:
+
+Let's cover the basics. I don't want us to waste time, so I'm going to try and keep this as straight forward as possible:
+
+- I will /always/ want to have an extensive conversation(s) and will normally want to provide a quote before starting a short term piece of work. Book a slot to talk on [[https://calendly.com/mavnn/1-hour-slot][Calendly]] or just send me an email (michael at mavnn.eu)
+- I currently live in Italy, about an hour away from Rome. I can offer all of the services above remotely. Asking me to attend in person will add travel costs and at least 2 billable days of my time.
+- You can hire me by the day, but in general for short term work I quote and then charge you for the work delivered rather than bill by unit time. I will consider discounts for non-profits, student organizations, etc. It it's easier for you, I can give a quote that includes all expenses rather than reclaiming them separately. (Hint: if you're in a large organization and this is the first time you're arranging to get a consultant in - /this will be easier for you/)
+  - I am VAT registered in the EU
+- In the rare occasion where it turns out that I cannot deliver what I promised (I'm just one human - things like illness can happen) I will let you know promptly, and before the work is due to be delivered, so we can renegotiate where to go from the reality of the situation.
+
+That's about everything, I think.

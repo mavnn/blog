@@ -1,4 +1,5 @@
 #+INCLUDE: ./blurb.inc.org
+- [[file:./2024/01/29/short_term_help.org][Short term help]] (2024-01-29)
 - [[file:./2024/01/26/writing_a_cv.org][Writing CVs for more senior roles]] (2024-01-26)
 - [[file:./2022/11/24/typescript_enums_and_serialization.org][TypeScript Enums and Serialization]] (2022-11-24)
 - [[file:./2022/10/14/adhd_and_me.org][ADHD and me]] (2022-10-14)

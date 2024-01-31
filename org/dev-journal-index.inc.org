@@ -1,0 +1,3 @@
+** The dev journals series so far
+
+- [[file:2024/01/31/dev-journal-1.org][Foundations]]

@@ -101,6 +101,8 @@ Code colouring. There's a slightly interesting quirk here as each language can d
 
   .org-typescript-access-modifier { color: #3b5998; }
   .org-typescript-primitive { color: #2c3140; }
+
+  .org-nix-attribute { color: #d14; }
 #+END_SRC
 
 Everything below this point is modified from the default org style sheet, that normally gets embedded into every page. I'm going to separate it out here so that I can start hacking on it, and then set the export not to inject it every time.

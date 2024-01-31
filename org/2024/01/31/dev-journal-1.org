@@ -1,0 +1,152 @@
+#+TITLE: Foundations: Dev Journal 1
+
+This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
+
+On the one hand this is a personal project. On the other, I'd like to take advantage of nice things like CI/CD, testing, etc, even when I'm working on something for myself. So this is also a mini-tour of many of the things I would do setting up a new greenfield project for a team.
+
+As the series progresses, I'll carry on adding the sections here.
+
+*The series so far*
+
+1. [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]
+
+** Part 1: Foundations
+
+Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
+
+On the things I'd like to try front, we have:
+
+ + [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
+ + [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
+
+On the technologies I've used before and found useful front, we have:
+
+ + [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
+ + [[https://direnv.net/][direnv]] for seamless local development environments.
+ + [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
+ + [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
+
+I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
+
+For today, let's start with a /minimum deployable product/: a "Hello world" Falco server with CI/CD pipeline in place. We'll have a gitlab hosted project anybody with a working nix environment can pull down and:
+
+ + run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
+ + run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
+ + by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
+
+Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
+
+*** Setup a nix flake to provide our environment
+
+A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
+
+#+BEGIN_SRC nix
+        # Tools we want available during development
+        devShells.default = pkgs.mkShell {
+          buildInputs = [ dnc.sdk_8_0 pkgs.nixfmt pkgs.skopeo ];
+        };
+
+        # Default result of running `nix build` with this
+        # flake; it builds the F# project `CalDance.fsproj`
+        packages.default = pkgs.buildDotnetModule {
+          pname = name;
+          version = "0.1";
+
+          src = ./.;
+          projectFile = "CalDance.fsproj";
+          nugetDeps = nugets;
+
+          # We set nix to create an output that contains
+          # everything needed, rather than depending
+          # on the dotnet runtime
+          selfContainedBuild = true;
+
+          dotnet-sdk = dnc.sdk_8_0;
+          dotnet-runtime = dnc.runtime_8_0;
+          executables = [ "CalDance" ];
+        };
+
+        # A target that builds a fully self-contained docker
+        # file with the project above
+        packages.dockerImage = pkgs.dockerTools.buildImage {
+          name = name;
+          config = {
+            Cmd = [ "${packages.default}/bin/CalDance" ];
+            Env = [ "DOTNET_EnableDiagnostics=0" ];
+          };
+        };
+#+END_SRC
+
+First we say we want a shell environment which includes the dotnet core SDK (version 8), nixfmt (for formatting nix files), and skopeo which we can use for moving docker images around.
+
+Then we define the default output for this flake: it uses the ~buildDotnetModule~ to specify that in our case it should build the executable ~CalDance~ based on the F# project file ~CalDance.fsproj~. A helper makes sure that Nix is aware of which nuget packages the project has referenced, so that they can be packaged correctly.
+
+Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ helper to say we want to be able to build a docker image that contains the executable from the default package above, everything it needs to run and /nothing else at all/. In our case, this produces a docker image weighing in at around 80MB - similar to what you'd get optimising a [[https://blogit.create.pt/telmorodrigues/2022/03/08/smaller-net-6-docker-images/][two step hand crafted dockerfile]], and significantly smaller than using the official [[https://hub.docker.com/_/microsoft-dotnet-aspnet/][Microsoft ASP.NET runtime image]].
+
+*** direnv
+
+Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
+
+We add a ~.envrc~ file to our project with the contents:
+
+#+BEGIN_SRC bash
+#!/usr/bin/env bash
+# the shebang is ignored, but nice for editors
+use flake
+#+END_SRC
+
+Next time we move into this directory, direnv will ask us to allow this ~.envrc~ file. If we accept, our normal local shell will have everything specified in the ~devShell~ above added to its path. This means we can, for example, use the ~dotnet~ command and we will use the version specified in ~flake.nix~ even if we haven't installed a system wide version of dotnet at all.
+
+*** The F# project
+
+There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
+
+Replace the contents of ~Program.fs~ with:
+
+#+BEGIN_SRC fsharp
+module Mavnn.CalDance.Server
+
+open Falco
+open Falco.Routing
+open Falco.HostBuilder
+
+webHost [||] {
+    endpoints [
+        get "/" (Response.ofPlainText "Hello World")
+    ]
+}
+#+END_SRC
+
+*** Set up the CI pipeline
+
+Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
+
+There's a little bit of boilerplate to tell nix that we want to allow flakes and to allow connection to the gitlab package registry. Once that is done, we log into the registry for this project using the CI provided environment variables, run ~nix build .#dockerImage~ and then push the results up to the registry.
+
+#+BEGIN_SRC yaml
+build-container:
+  image:
+    name: "nixos/nix:2.19.3"
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  before_script:
+    - nix-env --install --attr nixpkgs.skopeo
+  script:
+    - mkdir -p "$HOME/.config/nix"
+    - echo 'experimental-features = nix-command flakes' > "$HOME/.config/nix/nix.conf"
+    - mkdir -p "/etc/containers/"
+    - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
+    - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - 'nix build .#dockerImage'
+    - ls -lh ./result
+    - 'skopeo inspect docker-archive://$(readlink -f ./result)'
+    - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
+#+END_SRC
+
+It's worth noting here that Nix is a deterministic build system (for example, stripping dates from compiled metadata so building the same source code on a different day doesn't product a different binary). In a "real life" context I would be caching the results of the nix build steps to a service like [[https://www.cachix.org/][Cachix]] so that they could be reused between builds, which becomes increasingly useful as the project grows and starts to be comprised of multiple build steps (Nix will be able to cache each "step" individually, even if you only ask for the final outcome of the process).
+
+*** Wrapping it all up
+
+Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
+
+As a bonus extra, anybody with nix installed can build and run the project without having to know .NET or have any .NET tooling installed; a very nice feature when you have others depending on your work who might want to run your code locally, but may not have chosen the same tech stack.

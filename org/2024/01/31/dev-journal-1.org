@@ -150,3 +150,7 @@ It's worth noting here that Nix is a deterministic build system (for example, st
 Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
 
 As a bonus extra, anybody with nix installed can build and run the project without having to know .NET or have any .NET tooling installed; a very nice feature when you have others depending on your work who might want to run your code locally, but may not have chosen the same tech stack.
+
+*** Feedback? Comments?
+
+Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!

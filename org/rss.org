@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/31/dev-journal-1.html
 :PUBDATE: 2024-01-31
-:ID:       C6DBE1EE-F027-4581-9180-EE9C252D996B
+:ID:       BF35A0B0-CC66-4647-B8B0-77C848ADFF71
 :END:
 This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
 
@@ -16,12 +16,12 @@ As the series progresses, I'll carry on adding the sections here.
 
 ** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]
 :PROPERTIES:
-:ID:       46134F1A-3E0E-4A72-92D3-0057B2F82535
+:ID:       86B65C58-D863-4729-A79C-2D0B15DBFA4B
 :END:
 
 ** Part 1: Foundations
 :PROPERTIES:
-:ID:       E46A2350-6717-4E7D-BCB3-6305F181E22D
+:ID:       F36CA8BF-993B-4E6B-BBAE-865A6A905851
 :END:
 
 Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
@@ -30,30 +30,30 @@ On the things I'd like to try front, we have:
 
 ** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
 :PROPERTIES:
-:ID:       2B25621B-C004-4FCC-8754-FC1C07B65794
+:ID:       154D536D-E2FE-46B2-9297-B00AB4B7BE73
 :END:
 ** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
 :PROPERTIES:
-:ID:       4071964C-3DE8-48D8-9CE2-6FBE39D857A1
+:ID:       BF91FA07-73E7-440A-8821-AA747877926E
 :END:
 
 On the technologies I've used before and found useful front, we have:
 
 ** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
 :PROPERTIES:
-:ID:       B7209274-7F0E-43C8-8717-93A5E797874C
+:ID:       85320989-35E0-4791-9ECC-5030F9C89CE5
 :END:
 ** [[https://direnv.net/][direnv]] for seamless local development environments.
 :PROPERTIES:
-:ID:       BD808CBC-6AB3-4B16-9928-18C14F455A47
+:ID:       C95C8BF9-549C-4ED2-95E8-DECAA82D0ACE
 :END:
 ** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
 :PROPERTIES:
-:ID:       25170C4E-943F-4CB7-ADF5-A2ACA70FA2B9
+:ID:       EF5E888F-B322-4B19-81D3-63604388E446
 :END:
 ** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
 :PROPERTIES:
-:ID:       A3A44BB2-1619-4F30-A372-30807F42D6A2
+:ID:       BCDFCD9D-E56F-4F9A-8A9B-03973537FA46
 :END:
 
 I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
@@ -62,22 +62,22 @@ For today, let's start with a /minimum deployable product/: a "Hello world" Falc
 
 ** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
 :PROPERTIES:
-:ID:       996C34FE-FD67-44E7-963C-4A48721F09DF
+:ID:       0AD424F2-DADE-4771-9F50-2927E40B78A4
 :END:
 ** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
 :PROPERTIES:
-:ID:       00B87921-4BD7-43D6-89CC-9F4B7D54E860
+:ID:       831A1E8C-E20F-44BD-BDAD-880BB2C42B92
 :END:
 ** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
 :PROPERTIES:
-:ID:       B74E6077-655F-403C-B3BF-F71395CEB279
+:ID:       01A5D9ED-1B9A-4913-9C75-F25DDF41342E
 :END:
 
 Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
 
 *** Setup a nix flake to provide our environment
 :PROPERTIES:
-:ID:       4C30F62B-04BB-4299-AEF6-BDDFBB85E99B
+:ID:       97478AC7-0031-47E9-8E0C-4741720507AF
 :END:
 
 A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
@@ -127,7 +127,7 @@ Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ hel
 
 *** direnv
 :PROPERTIES:
-:ID:       FF56BF61-9352-4912-ACE1-2C1BA813DB71
+:ID:       84594098-A128-458C-B97E-77621CD24A7F
 :END:
 
 Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
@@ -144,7 +144,7 @@ Next time we move into this directory, direnv will ask us to allow this ~.envrc~
 
 *** The F# project
 :PROPERTIES:
-:ID:       B4AD3671-F3FD-462B-8C6C-E3677E03A49F
+:ID:       0449263B-6EB3-480C-A9B5-F052B0D3488B
 :END:
 
 There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
@@ -167,7 +167,7 @@ Replace the contents of ~Program.fs~ with:
 
 *** Set up the CI pipeline
 :PROPERTIES:
-:ID:       C08CC810-6287-40DF-BC9F-86EBD57A278D
+:ID:       40E1F60D-6F07-4563-88CB-9D8B682CC646
 :END:
 
 Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
@@ -198,17 +198,24 @@ It's worth noting here that Nix is a deterministic build system (for example, st
 
 *** Wrapping it all up
 :PROPERTIES:
-:ID:       EAEB1C43-5440-4B9D-994A-20A8A3B83A39
+:ID:       4CC522B5-080A-45CC-86CC-1609F36EEF88
 :END:
 
 Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
 
 As a bonus extra, anybody with nix installed can build and run the project without having to know .NET or have any .NET tooling installed; a very nice feature when you have others depending on your work who might want to run your code locally, but may not have chosen the same tech stack.
+
+*** Feedback? Comments?
+:PROPERTIES:
+:ID:       087FC73D-CE3C-400E-914D-DB94A5657E5D
+:END:
+
+Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
 * Short term help
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/29/short_term_help.html
 :PUBDATE: 2024-01-29
-:ID:       C46F7C99-09E4-4C91-A49D-C9553B86A83D
+:ID:       0326E7E1-38E0-422C-BB49-1FDD158B8A42
 :END:
 #+html_head_extra: <meta property="og:image" content="https://blog.mavnn.co.uk/images/swirl.svg" /><meta property="og:type" content="article" /><meta property="og:title" content="Short term help" /><meta property="og:url" content="https://blog.mavnn.co.uk/2024/01/29/short_term_help.html" />
 
@@ -222,7 +229,7 @@ I'm so glad you asked. Or, you know, you can just skip straight to the [[Logisti
 
 ** Consulting
 :PROPERTIES:
-:ID:       9810B2C9-90BC-489B-AD61-9C82348EEADB
+:ID:       443F7361-6E00-4BF9-AF7B-C7425B02CAB6
 :END:
 
 ** Build, packaging, and continuous integration
@@ -236,23 +243,23 @@ What kind of things could your CI/CD process do for you? It depends on /your/ ne
 
 ** Making sure that CI/CD is managed *in the code repository* so that running the build locally and on the build server does the same thing in the same way, and the build can evolve in a safe, version controlled way just like the rest of your code
 :PROPERTIES:
-:ID:       EF92FA73-C94D-4320-88BF-A9A468623A96
+:ID:       F0AB3282-EFE3-48C1-89D8-5DE6A9228816
 :END:
 ** Helping trace and encode the /real/ dependencies in your code base to unlock incremental, cachable build steps and reduce overall build times with concurrency
 :PROPERTIES:
-:ID:       C03D101F-128D-4001-A63E-B43BF9BA2A52
+:ID:       F1131EF1-E4D9-48ED-8651-4D17D4160076
 :END:
 ** Split your test suite so tests can be run in parallel (yes, even integration tests) and then aggregate the results
 :PROPERTIES:
-:ID:       596FCB8B-B5CB-42C7-9743-22FCB0DCA946
+:ID:       ED6CDD8C-39CC-431D-81D8-F82554D3E081
 :END:
 ** Use tools like Nix or multi-step docker/podman builds to create minimal containers that only contain what they really need
 :PROPERTIES:
-:ID:       23B5E7DA-15DA-4E62-956E-3E3D198C719A
+:ID:       6D2569F8-E98B-46D9-B9CC-6B5647EA90D5
 :END:
 *** bonus extra: doing this with Nix also gives you development environments as code and reproducible deployment artifacts - same code in, same container out
 :PROPERTIES:
-:ID:       A09CC165-83FB-4F01-AB4D-7C237279F2F2
+:ID:       4310190B-2DFD-4E1A-BE3A-1D7E69345FBB
 :END:
 
 If this is a new product/project and you just want someone to make all these considerations go away I can also build you [[*Build a project skeleton][a project skeleton]] with everything set up and ready to go for your preferred CI provider and deployment environment.
@@ -288,7 +295,7 @@ Considering buying a new service, picking up a new programming language, or chan
 
 ** Workshops and training
 :PROPERTIES:
-:ID:       987F2052-AFE1-4388-96C3-71638AE2AFBD
+:ID:       E4FEF856-5679-4DDD-A158-B6C3662F2DA2
 :END:
 
 Unlike more general consultancy, workshops on topics I know well such as the ones below are a fairly fixed commitment. If you're considering using your training budget, you can assume around 2500 euros/day for up to 6 people online. In person will increase the cost but allows for groups of up to 10 people.
@@ -330,7 +337,7 @@ I'm a huge fan of property based testing, and I'm more than happy to give intera
 
 ** Bespoke software creation
 :PROPERTIES:
-:ID:       6229888F-0270-409D-99A2-F3A552F8B66E
+:ID:       271D71F4-BF99-4A6B-9988-EBF41ADB742F
 :END:
 
 ** Build a tool/library
@@ -356,23 +363,23 @@ Let's cover the basics. I don't want us to waste time, so I'm going to try and k
 
 ** I will /always/ want to have an extensive conversation(s) and will normally want to provide a quote before starting a short term piece of work. Book a slot to talk on [[https://calendly.com/mavnn/1-hour-slot][Calendly]] or just send me an email (michael at mavnn.eu)
 :PROPERTIES:
-:ID:       F341DF4D-78D6-4A62-863C-0E2B26C85E94
+:ID:       2F82B491-0B29-4283-989F-4CF2EF4ABCE5
 :END:
 ** I currently live in Italy, about an hour away from Rome. I can offer all of the services above remotely. Asking me to attend in person will add travel costs and at least 2 billable days of my time.
 :PROPERTIES:
-:ID:       99BC854A-C6BE-460E-A5C2-30FBA509ADF6
+:ID:       1A50B40E-9155-4D60-AB80-6EE9DEDB7A62
 :END:
 ** You can hire me by the day, but in general for short term work I quote and then charge you for the work delivered rather than bill by unit time. I will consider discounts for non-profits, student organizations, etc. It it's easier for you, I can give a quote that includes all expenses rather than reclaiming them separately. (Hint: if you're in a large organization and this is the first time you're arranging to get a consultant in - /this will be easier for you/)
 :PROPERTIES:
-:ID:       3E2F0F06-E897-4B05-8048-ADC8D8FADF8C
+:ID:       3D6106CF-52FD-4565-8C2C-1980964DA7FB
 :END:
 *** I am VAT registered in the EU
 :PROPERTIES:
-:ID:       0CE72791-A705-4340-95F8-E77BBB162F74
+:ID:       975E153F-339D-4EE2-B9BD-9017FBC6D013
 :END:
 ** In the rare occasion where it turns out that I cannot deliver what I promised (I'm just one human - things like illness can happen) I will let you know promptly, and before the work is due to be delivered, so we can renegotiate where to go from the reality of the situation.
 :PROPERTIES:
-:ID:       E5C70536-DDD1-4F42-A9A3-96BE28D6E3CF
+:ID:       F3298B5B-7650-42DA-877F-F835B0AED588
 :END:
 
 That's about everything, I think.
@@ -380,7 +387,7 @@ That's about everything, I think.
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/26/writing_a_cv.html
 :PUBDATE: 2024-01-26
-:ID:       F3F96AB0-D793-4019-AD5F-E3E15690EEEC
+:ID:       C2E85BEA-BC06-4F28-8B67-9DED0ADF389E
 :END:
 A while back (/checks notes, gulps/) I wrote a fairly successful [[https://blog.mavnn.co.uk/good-developer-cvs/][blog post on the types of CVs]] I liked receiving as one of the people screening technical applications, and some of the mistakes I was seeing applicants making.
 
@@ -405,7 +412,7 @@ One slight caveat: I did include my LinkedIn profile, which has all the gritty d
 :PROPERTIES:
 :RSS_PERMALINK: 2022/11/24/typescript_enums_and_serialization.html
 :PUBDATE: 2024-01-24
-:ID:       9DB4ECDE-55F2-4259-9923-29F6BFE01327
+:ID:       8C517455-1C9F-403B-BEFE-591A07CD9B2F
 :END:
 #+index: TypeScript!Deserializing enums safely
 

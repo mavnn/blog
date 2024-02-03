@@ -40,7 +40,7 @@ It's worth noting that I don't have a personal axe to grind here. I won't tell y
 
 I have the advantage of having helped architect and design solutions in a variety of styles in production environments.
 
-This is a bit of a hybrid service that includes aspects of [[Technology evaluation][technology evaluation]], [[Code audit][code audit]], and [[Technology evaluation][technology evaluation]] but zoomed out to look at "how do I put this all together."
+This is a bit of a hybrid service that includes aspects of [[Technology evaluation][technology evaluation]] and [[Code audit][code audit]] with a splash of [[Domain driven design coaching][domain driven design by example]] (so that I understand what you're building) - but zoomed out to look at "how do I put all this together."
 
 ** Code audit
 :PROPERTIES:

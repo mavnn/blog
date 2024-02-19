@@ -1,731 +1,104 @@
 #+TITLE: Mavnn's blog
 
-* Scaffolding: Dev Journal 2
+* Do notation for TypeScript
 :PROPERTIES:
-:RSS_PERMALINK: 2024/02/06/dev-journal-2.html
-:PUBDATE: 2024-02-06
-:ID:       AB838BCF-926F-4E9E-831A-29918AE85D66
+:RSS_PERMALINK: 2024/02/19/do-notation-for-typescript.html
+:PUBDATE: 2024-02-19
+:ID:       47EC6E0A-88F2-4453-9080-92A8417DBE19
 :END:
-#+begin_quote
-This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal2?ref_type=tags][DevJournal2]] tag for the CalDance project in GitLab holds the state of the repository as described here.
-#+end_quote
+This is rather an aside from recent blog posts, but something I found interesting none the less.
 
-After the initial set up work that builds our project and packages it for deployment done, it looked might it could be time to write some code. Given we're planning to use htmx, we're going to be spending a lot of time constructing urls to inject into our site that need to match end points on the server so a good starting point seemed to be building a set of helpers for defining "bidirectional routing".
+Fair warning to start us off: this post assumes that you are aware of and understand "do notation" (or "computational expressions" or "monad syntax") and like the idea of having it available in TypeScript.
 
-Adding the ~Routing.fs~ file to the F# project went exactly as you'd expect. We'll come back to this code when we test it properly, but to give you an idea we then updated the main server to actually start returning some HTML. The new ~Program.fs~ file new looks like this:
+It starts by working through a possible way of implementing a type safe representation of a sequence of monadic operations that has a much nicer user experience than nested continuation functions, and then leads into a length example of both building and showing how to use a monad which I've found very useful when working in TypeScript for handling asynchronous code that needs to meaningfully respond to both successes and failures.
 
-#+begin_src fsharp
-  module Mavnn.CalDance.Server
+The idea is that we're going to go from code that looks like this:
 
-  open Falco.HostBuilder
-  open Falco.Markup
-  open Mavnn.CalDance.Routing
-  open Mavnn.CalDance.Routing.Operators
-
-  let greetingRoute =
-    literalSection "greetings/" ./+ stringSection "name"
-
-  let indexRoute = literalSection "/"
-
-  let indexEndpoint =
-    htmxGet indexRoute (fun () _ ->
-      Elem.html
-        []
-        [ Elem.body
-            []
-            [ Elem.h1 [] [ Text.raw "Hi!" ]
-              Elem.p
-                []
-                [ Text.raw "Would you like to "
-                  htmxLink greetingRoute "Bob" "greet Bob?" ] ] ])
-
-  let greetingEndpoint =
-    htmxGet greetingRoute (fun name _ ->
-      Elem.html
-        []
-        [ Elem.body
-            []
-            [ Elem.h1 [] [ Text.rawf "Hi %s!" name ] ] ])
-
-  webHost [||] {
-    add_antiforgery
-    endpoints [ indexEndpoint; greetingEndpoint ]
+#+begin_src typescript
+  export const processLaxCallback = ({
+    laxOperations,
+    commands,
+    localFunctions,
+  }: LaxCallbackDependencies) => async (httpRequest) => {
+    try {
+      const laxSignatureCheck = await laxOperations.checkSignature(httpRequest)
+      if(isFailure(signature)) {
+        await reportError(signature)
+        return
+      }
+      const laxContext = laxOperations.parseRequest({ httpRequest, laxSignatureCheck })
+      if(isFailure(laxContext)) {
+        await reportError(laxContext)
+        return
+      }
+      // ...continued
+    } catch (e) {
+      // ... etc
+    }
   }
 #+end_src
 
-We now have two routes, one which starts with ~greetings/~ and then matches any string, and one which responds at ~/~. You can see in index end point we use our new ~htmxLink~ helper to construct a link that will be matched by the greeting end point, and in the greeting end point we supply a handler that knows it is going to receive a string.
+...to code that looks more like this:
 
-This is all type safe, and that's lovely and all... but now we have two problems.
+#+begin_src typescript
+  export const processLaxCallback = ({
+    laxOperations,
+    commands,
+    localFunctions,
+  }: LaxCallbackDependencies) =>
+    SolidChain.start<{ httpRequest: HttpRequest }, LaxCallBackState>()
+      .chain("laxSignatureCheck", laxOperations.checkSignature)
+      .chain("laxContext", laxOperations.parseRequest)
+      // ...continued
+#+end_src
 
-Let's tackle the biggest problem first!
+If you're impatient you can jump straight to [[*Appendix 2: A slightly excessive example of the Solid monad in action][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
 
-** Clarity and style
+For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[*Appendix 3: license][appendix 3]].
+
+** The idea
 :PROPERTIES:
-:ID:       7A37F106-6A95-47FB-AC48-FC523326099C
+:ID:       D5F2E2D6-ED4C-4433-B423-CA154BC6EC22
 :END:
 
-Writing lists of lists is a succinct and powerful way of representing HTML, but it is also a pain in the backside to format nicely by hand. It's also very easy to bike shed[fn:1] about, leading to a lot of wasted time and churn in commits.
+TypeScript has one form of monad notation already - the ~await~ keyword. Unfortunately, there isn't any way to plug into the mechanism used and define your own alternative ~bind~ implementation without doing something dangerously hacky. And, frankly, the last thing your TypeScript code needs is an other sharp edge to cut yourself on.
 
-One of the best solutions to this is to automate code formatting following a reasonable style guide. This is especially important at the beginning of a project, or (ahem) when writing code you'd like people to follow as an example as it means all of the changes made to the project are because something meaningful has actually changed and there is a consistent style to follow along with.
+But... what does binding a value in monad notation really do? It doesn't allow you to write code you couldn't have written anyway long hand. It allows you to give the result of a calculation in your code in name in the current scope.
 
-[[https://fsprojects.github.io/fantomas/docs/index.html][Fantomas]] is the code formatter generally used by the F# community. We always want everyone to be using the same version and config, so let's build it into our ~nix~ configuration. The nix files we use to structure the set up of the repository are a programming language in their own right, so we can write a function to provide the correct version of Fantomas taking the version of the dotnet runtime as an input argument (we've put this in a separate file in the ~nix~ directory to keep things neat).
+So: if we consider the fact that a scope is really just a mapping from names to values, and that TypeScript allows function inputs to alter the type of their output... maybe we can do something with that?
 
-#+begin_src nix
-  { pkgs, dnc }:
-  let version = "6.2.3";
-  in pkgs.stdenv.mkDerivation {
-    pname = "fantomas";
-    version = version;
-    nativeBuildInputs = with pkgs; [ unzip makeWrapper ];
-    src = pkgs.fetchurl {
-      url = "https://globalcdn.nuget.org/packages/fantomas.${version}.nupkg";
-      hash = "sha256-Aol10o5Q7l8s6SdX0smVdi3ec2IgAx+gMksAMjXhIfU=";
-    };
-    unpackPhase = ''
-      ls -al $src
-      unzip "$src" -d $out
-    '';
-    installPhase = ''
-      mkdir -p $out/bin
-      cp -r * $out/bin
-      echo '#! ${pkgs.bash}/bin/bash -e' > $out/bin/fantomas
-      echo "FANTOMAS_PATH=$out/tools/net6.0/any/fantomas.dll" >> $out/bin/fantomas
-      echo '${dnc.runtime_8_0}/bin/dotnet $FANTOMAS_PATH "$@"' >> $out/bin/fantomas
-      chmod +x $out/bin/fantomas
-    '';
-  }
-#+end_src
-
-This basically says that we want to download a particular version of Fantomas from nuget (the dotnet package library), unzip it, and then create a shell script that uses our dotnet core runtime to run it. This works because Fantomas is built using an "any CPU" build configuration, allowing us to supply the correct runtime as needed by the system we're currently using but still executing the same compiled dotnet code. For a package that included any CPU specific code the normal nix approach is to download the source and then build it ourselves.
-
-Because we put the shell script in the ~bin~ directory of the output of this derivation (how nix refers to the definition of an enclosed package), this will be added to the path of any nix shell definition that depends on it. To make people's lives easier, we can also wrap it for common use cases which we do here to create the ~format-all~ and ~format-stdin~ commands[fn:2].
-
-In our top level ~flake.nix~ file we can now import these tools and expose them to our developers:
-
-#+begin_src nix
-  let
-    # ... snip ...
-    fantomas = (import ./nix/fantomas.nix) { inherit pkgs dnc; };
-    format-all = (import ./nix/format-all.nix) { inherit pkgs fantomas; };
-    format-stdin =
-      (import ./nix/format-stdin.nix) { inherit pkgs fantomas; };
-    # ... snip ...
-  in rec {
-    # Tools we want available during development
-    devShells.default = pkgs.mkShell {
-      buildInputs = [
-        dnc.sdk_8_0
-        pkgs.nixfmt
-        pkgs.skopeo
-        fantomas
-        format-all
-        format-stdin
-      ];
-    };
-    # ... snip ...
-  }
-#+end_src
-
-Now everybody has the same formatting tools available and an easy way to reference them. It even allows us to provide git hooks and/or attribute filters that users can choose to activate that will prevent unformatted code from being pushed or even format it as it is committed to the repository (check out the [[https://git-scm.com/book/en/v2/Customizing-Git-Git-Attributes][section on smudge and clean filters here]] if you're interested).
-
-I'm normally quite keen on leaving the formatter settings on their default, but given the purpose of this particular repository I've also added a ~.editorconfig~ file to the repository to adjust the indentation to two spaces rather than the default four, and to reduce the aimed for line length to 60 characters to make it easier to read in the blog posts.
-
-** Testing (local)
+** Defining a scope
 :PROPERTIES:
-:ID:       2495C9F2-2DC4-41F4-B0A5-44A0F5E8A433
+:ID:       24A4229A-D1E1-42BD-89C6-55EB5E271B09
 :END:
 
-Nearly as importantly as the code being readable is whether it actually works. [[https://github.com/haf/expecto][Expecto]] is an F# unit test library that allows you to write executable test programs and defines tests as pieces of data rather than class methods with particular attributes. This can be insanely helpful in writing parameterized tests, which we'll get back to in a later post.
+A type that maps names to values is reasonably easy to define in TypeScript. It looks something like this:
 
-Right now though, we just want the tests to exist and be run in CI.
-
-We'll start off by moving the existing server code into a directory called (/... let the suspense build .../) ~Server~. Next to it we'll create an F# console project called ~Server.Test~ and use ~dotnet add package~ to add Expecto, along with YoloDev.Expecto.TestSdk and Microsoft.NET.Test.Sdk which allow the project to /also/ be run by calling ~dotnet test~ so everybody's editors know how to run the Expecto tests.
-
-Finally, we add a project reference to ~Server~ from ~Server.Test~ and locally at least we're all set for running unit tests!
-
-Let's add one to ~Program.fs~:
-
-#+begin_src fsharp
-  module Mavnn.CalDance.Server.Test
-
-  open Expecto
-
-  [<Tests>]
-  let tests =
-    testList
-      "My list"
-      [ testCase "hello" (fun () ->
-          Expect.equal
-            "hello"
-            "hello"
-            "Is it me you're looking for?") ]
-
-  [<EntryPoint>]
-  let main args =
-    // This allows running with different arguments from the command line,
-    // as well as via `dotnet test`
-    runTestsWithCLIArgs [] args tests
-#+end_src
-
-And then we can run it from the root of our project:
-
-#+begin_src shell
-  CalDance on  main via ❄️  impure (nix-shell)
-  ❯ dotnet run --project  Server.Test
-  # snipped warning messages about FSharp.Core versions
-  [15:59:00 INF] EXPECTO? Running tests... <Expecto>
-  [15:59:00 INF] EXPECTO! 1 tests run in 00:00:00.0262215 for My list.hello – 1 passed, 0 ignored, 0 failed, 0 errored. Success! <Expecto>
-
-  CalDance on  main via ❄️  impure (nix-shell)
-  ❯
-#+end_src
-
-The current version of Expecto hasn't been updated to the latest FSharp.Core yet but it appears to work fine so we'll just keep an eye on that for now.
-
-** Testing (CI)
-:PROPERTIES:
-:ID:       30078FD5-7AFF-4CD8-B299-30F5128184FB
-:END:
-
-Now though, we have a problem. The promise of using Nix was that we wouldn't need to configure CI with lots of setup for things likes tests because our build environment is self contained, and that we could incrementally and deterministically build our sub-components. But now we either create a single nix derivation that has both our projects in, or we need to somehow package the tests separately. We don't want to create a joint derivation because we're compiling down our server code into a self contained enclosure including its own copy of the dotnet runtime.
-
-But we can't reference that build output directly from our test project, because it /is/ built as a self contained enclosure but in the test project we want to reference it as a library in a different executable.
-
-This is where we play some slightly interesting tricks to get all the properties we want. Do you remember above, where we put the output of the Fantomas derivation in the ~bin~ directory to declare that the file in question was an executable? Turns out that we can also put a file in the ~share~ directory to signify that it is available to other derivations but is not directly used by any executables in this one.
-
-It also turns out that the way the F# helpers in nix manage incremental builds is by assuming that F# nix derivations will provide a Nuget package in the ~share~ directory. This means that we can build the server code once as a self-contained executable and put it in the ~bin~ folder, but we can /also/ build it again without the self-contained flag and package it into the ~share~ folder by adding a hook to our derivation:
-
-#+begin_src nix
-  # ... snip ...
-  postInstall = ''
-    ${dnc.sdk_8_0}/bin/dotnet \
-        pack \
-        -p:ContinuousIntegrationBuild=true \
-        -p:Deterministic=true \
-        --output "$out/share" \
-        --configuration "Release"
-  '';
-  # ... snip ...
-#+end_src
-
-We'll move the derivation into [[https://gitlab.com/mavnn/caldance/-/blob/adfe02a71f7193e93fdefd7518f465e592ead6d8/nix/server.test.nix][its own file]] while we're at it to stop the main ~flake.nix~ file getting too confusing and noisy, and start passing in things like the dotnet core version and project name as variables to make it easier to keeps changes between components in sync.
-
-Aside: there is actually a helpful boolean flag that can be used to pack F# libraries but it fairly reasonably complains if you try and package a self-contained build.
-
-This in turn allows us to define a derivation for the [[https://gitlab.com/mavnn/caldance/-/blob/adfe02a71f7193e93fdefd7518f465e592ead6d8/nix/server.test.nix][test project]] which looks very similar to the server derivation, just that it takes to server derivation as an argument so that it can declare a project reference on it along with all the previous arguments.
-
-*Quirk alert*: this works very, very, well giving us cached incremental builds but it does also require us to add a conditional /package/ dependency on the server to our test project for the build to complete successfully under Nix. This means you end up with a project file that contains something like:
-
-#+begin_src xml
-  <ItemGroup>
-    <ProjectReference Include="..\Server\CalDance.Server.fsproj" />
-    <PackageReference Include="CalDance.Server" Version="*" Condition=" '$(ContinuousIntegrationBuild)'=='true' " />
-  </ItemGroup>
-#+end_src
-
-To finish off our test setup, we add a new output to our flake file - a request for a JUnit formatted xml file containing our test results.
-
-#+begin_src nix
-  packages.test = pkgs.stdenv.mkDerivation {
-    name = "${baseName}.TestResults";
-    version = version;
-    unpackPhase = "true";
-
-    installPhase = ''
-      ${testExecutable}/bin/CalDance.Server.Test --junit-summary $out/server.test.junit.xml
-    '';
+#+begin_src typescript
+  export type Scope<Keys extends string> = {
+    [K in Keys]: any;
   };
 #+end_src
 
-Now we can run ~nix build .#test~ in our root directory and we will get a result directory containing the test results (which will be cached unless the code of either the server or the test project changes).
+We can say that anything we're willing to consider as a scope is a type that extends the type above: it will have some keys, which will all be strings, and they will map to some values, which will all be sub types of ~any~.
 
-Some boiler plate additions to the GitLab CI configuration finishes things off; we tell the build to build both ~.#dockerImage~ /and/ ~.#test~ (which nix will happily build run in parallel for us) and then copy the test results to a folder in the actual build directory which we tell GitLab contains junit xml results. This is needed because the ~result-1~ directory they are created in is a symlink to the a hash addressable store that nix uses, and it turns out GitLab's build artifact upload mechanism can't follow the symlink.
+Now we need a type safe way to add a value to the scope.
 
-#+begin_src yaml
-  # Nothing before the build command in the script has changed since the previous post
-    - 'nix build .#dockerImage .#test'
-    - mkdir testResults
-    - 'cp result-1/* testResults'
-    - ls -lh ./result
-    - 'skopeo inspect docker-archive://$(readlink -f ./result)'
-    - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
-  artifacts:
-    when: always
-    paths:
-      - 'testResults/*.xml'
-    reports:
-      junit: 'testResults/*.xml'
+We start with a calculated type which works out what the result of adding a value with a name to a scope should be:
+
+#+begin_src typescript
+  export type ExtendedScope<
+    OldScope extends Scope<any>,
+    NewField extends string,
+    NewValue
+  > = OldScope extends any
+    ? {
+        [K in keyof OldScope | NewField]: K extends NewField
+          ? NewValue
+          : K extends keyof OldScope
+          ? OldScope[K]
+          : never;
+      }
+    : never;
 #+end_src
 
-** Wrapping it all up
-:PROPERTIES:
-:ID:       55648848-BDBA-4344-8270-0B3210A0FAA8
-:END:
-
-That seems like a nice breaking off point for now. In this next stage we have:
-
-** Provided shared versions of formatting tools to help keep the code base consistent
-:PROPERTIES:
-:ID:       A4EB058B-6662-4864-844A-420730A63722
-:END:
-** Added a test project to allow us to unit test our code
-:PROPERTIES:
-:ID:       5A32959C-3613-4336-9852-12B37DFF6B6C
-:END:
-** Updated CI to run and report on those tests
-:PROPERTIES:
-:ID:       9B0B4B5B-6AB8-4BA6-8853-A78121E711E7
-:END:
-** Created a standard pattern for being able to add more F# projects to our repository which will all be built deterministically and for which the build results can be independently cached
-:PROPERTIES:
-:ID:       6A4AFD03-457D-4745-85A8-E836BB1C4E3E
-:END:
-
-As always, if you have questions or comments on what's happened so far then leave an issue on the [[https://gitlab.com/mavnn/caldance/-/issues][CalDance GitLab repository]]. And as a thank you note for reading this far (and to see if anyone actually is!) we now have a bonus "choose your own adventure" poll.
-
-If you'd like to see the next post focusing on testing the code we already have, hit the thumbs up on [[https://gitlab.com/mavnn/caldance/-/issues/1][this issue]].
-
-If you'd like to see the next post starting to actually hook up a form and a data store, hit the thumbs up on [[https://gitlab.com/mavnn/caldance/-/issues/2][this issue instead]]!
-
-** Footnotes
-:PROPERTIES:
-:ID:       A2F5BAE7-6286-43C7-AC5A-17F5F932DDA8
-:END:
-
-[fn:1] Bike shedding is the original example used in the [[https://en.wikipedia.org/wiki/Law_of_triviality][law of triviality]] as stated by C. Northcote Parkinson: "The time spent on any item of the agenda will be in inverse proportion to the sum [of money] involved." It's often used as short hand to refer to the fact that trivial matters which are easy to understand and have an opinion on will tend to create enormously more discussion and hesitation than complex problems where solving the problem even once, let alone thinking of alternative solutions, is a serious effort.
-
-[fn:2] The code for the helpers looks like this:
-
-#+begin_src nix
-  { pkgs, fantomas }:
-  pkgs.writeShellScriptBin "format-all" ''
-    ${fantomas}/bin/fantomas */src/*.fs
-  ''
-#+end_src
-
-#+begin_src nix
-  { pkgs, fantomas }:
-  pkgs.writeShellScriptBin "format-stdin" ''
-    TMP_FILE=$(mktemp --suffix=".fs" || exit 1)
-    if [ $? -ne 0 ]; then
-      echo "$0: Cannot create temp file"
-      exit 1
-    fi
-    echo "$(</dev/stdin)" > $TMP_FILE
-    ${fantomas}/bin/fantomas $TMP_FILE &> /dev/null
-    cat $TMP_FILE
-    rm $TMP_FILE
-  ''
-#+end_src
-* Foundations: Dev Journal 1
-:PROPERTIES:
-:RSS_PERMALINK: 2024/01/31/dev-journal-1.html
-:PUBDATE: 2024-01-31
-:ID:       570A122B-0A6B-4953-978A-1B7EB626FF41
-:END:
-This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
-
-On the one hand this is a personal project. On the other, I'd like to take advantage of nice things like CI/CD, testing, etc, even when I'm working on something for myself. So this is also a mini-tour of many of the things I would do setting up a new greenfield project for a team.
-
-As the series progresses, I'll carry on adding the sections here.
-
-*The series so far*
-
-** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
-:PROPERTIES:
-:ID:       C88833A9-CAB5-4F94-BAB3-EFC1E09895E4
-:END:
-** [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
-:PROPERTIES:
-:ID:       E7D39674-DF61-4AE4-8EA1-94C58F634CBC
-:END:
-
-** Part 1: Foundations
-:PROPERTIES:
-:ID:       7D9E18A9-6E7E-443D-BBC7-498754AFA0A0
-:END:
-
-Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
-
-On the things I'd like to try front, we have:
-
-** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
-:PROPERTIES:
-:ID:       BC454671-5792-4E05-B8F6-4FEDA0022E69
-:END:
-** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
-:PROPERTIES:
-:ID:       9ACDE907-CEE7-44E4-95D3-EE5B4734FC0D
-:END:
-
-On the technologies I've used before and found useful front, we have:
-
-** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
-:PROPERTIES:
-:ID:       7B3AE391-95E8-4F20-B572-79F095DEE9D5
-:END:
-** [[https://direnv.net/][direnv]] for seamless local development environments.
-:PROPERTIES:
-:ID:       1EB2733D-7EE3-486D-894A-2A33B217BA65
-:END:
-** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
-:PROPERTIES:
-:ID:       207C0475-3073-433B-9D74-61F9327ADB84
-:END:
-** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
-:PROPERTIES:
-:ID:       F1FB5C1E-D881-4B67-87B0-9B689C93DB6A
-:END:
-
-I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
-
-For today, let's start with a /minimum deployable product/: a "Hello world" Falco server with CI/CD pipeline in place. We'll have a gitlab hosted project anybody with a working nix environment can pull down and:
-
-** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
-:PROPERTIES:
-:ID:       032C8190-7716-4307-83FF-09D197356693
-:END:
-** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
-:PROPERTIES:
-:ID:       92E7CC0D-584D-45D1-92D6-9F70C7E1D998
-:END:
-** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
-:PROPERTIES:
-:ID:       93476D59-11A9-4DB2-B15D-93303EE43F17
-:END:
-
-Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
-
-*** Setup a nix flake to provide our environment
-:PROPERTIES:
-:ID:       EC969BD1-873F-4E84-9DAD-D627DCF00126
-:END:
-
-A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
-
-#+begin_src nix
-  # Tools we want available during development
-  devShells.default = pkgs.mkShell {
-    buildInputs = [ dnc.sdk_8_0 pkgs.nixfmt pkgs.skopeo ];
-  };
-
-  # Default result of running `nix build` with this
-  # flake; it builds the F# project `CalDance.fsproj`
-  packages.default = pkgs.buildDotnetModule {
-    pname = name;
-    version = "0.1";
-
-    src = ./.;
-    projectFile = "CalDance.fsproj";
-    nugetDeps = nugets;
-
-    # We set nix to create an output that contains
-    # everything needed, rather than depending
-    # on the dotnet runtime
-    selfContainedBuild = true;
-
-    dotnet-sdk = dnc.sdk_8_0;
-    dotnet-runtime = dnc.runtime_8_0;
-    executables = [ "CalDance" ];
-  };
-
-  # A target that builds a fully self-contained docker
-  # file with the project above
-  packages.dockerImage = pkgs.dockerTools.buildImage {
-    name = name;
-    config = {
-      Cmd = [ "${packages.default}/bin/CalDance" ];
-      Env = [ "DOTNET_EnableDiagnostics=0" ];
-    };
-  };
-#+end_src
-
-First we say we want a shell environment which includes the dotnet core SDK (version 8), nixfmt (for formatting nix files), and skopeo which we can use for moving docker images around.
-
-Then we define the default output for this flake: it uses the ~buildDotnetModule~ to specify that in our case it should build the executable ~CalDance~ based on the F# project file ~CalDance.fsproj~. A helper makes sure that Nix is aware of which nuget packages the project has referenced, so that they can be packaged correctly.
-
-Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ helper to say we want to be able to build a docker image that contains the executable from the default package above, everything it needs to run and /nothing else at all/. In our case, this produces a docker image weighing in at around 80MB - similar to what you'd get optimising a [[https://blogit.create.pt/telmorodrigues/2022/03/08/smaller-net-6-docker-images/][two step hand crafted dockerfile]], and significantly smaller than using the official [[https://hub.docker.com/_/microsoft-dotnet-aspnet/][Microsoft ASP.NET runtime image]].
-
-*** direnv
-:PROPERTIES:
-:ID:       46D054DD-3D05-4863-9A45-2D0B09A8F231
-:END:
-
-Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
-
-We add a ~.envrc~ file to our project with the contents:
-
-#+begin_src bash
-  #!/usr/bin/env bash
-  # the shebang is ignored, but nice for editors
-  use flake
-#+end_src
-
-Next time we move into this directory, direnv will ask us to allow this ~.envrc~ file. If we accept, our normal local shell will have everything specified in the ~devShell~ above added to its path. This means we can, for example, use the ~dotnet~ command and we will use the version specified in ~flake.nix~ even if we haven't installed a system wide version of dotnet at all.
-
-*** The F# project
-:PROPERTIES:
-:ID:       1EBF0C94-AAC8-4140-8FEA-B818500AB172
-:END:
-
-There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
-
-Replace the contents of ~Program.fs~ with:
-
-#+begin_src fsharp
-  module Mavnn.CalDance.Server
-
-  open Falco
-  open Falco.Routing
-  open Falco.HostBuilder
-
-  webHost [||] {
-      endpoints [
-          get "/" (Response.ofPlainText "Hello World")
-      ]
-  }
-#+end_src
-
-*** Set up the CI pipeline
-:PROPERTIES:
-:ID:       3A893082-1FDC-4B43-9839-E14805A1E60F
-:END:
-
-Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
-
-There's a little bit of boilerplate to tell nix that we want to allow flakes and to allow connection to the gitlab package registry. Once that is done, we log into the registry for this project using the CI provided environment variables, run ~nix build .#dockerImage~ and then push the results up to the registry.
-
-#+begin_src yaml
-  build-container:
-    image:
-      name: "nixos/nix:2.19.3"
-    variables:
-      IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    before_script:
-      - nix-env --install --attr nixpkgs.skopeo
-    script:
-      - mkdir -p "$HOME/.config/nix"
-      - echo 'experimental-features = nix-command flakes' > "$HOME/.config/nix/nix.conf"
-      - mkdir -p "/etc/containers/"
-      - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
-      - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-      - 'nix build .#dockerImage'
-      - ls -lh ./result
-      - 'skopeo inspect docker-archive://$(readlink -f ./result)'
-      - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
-#+end_src
-
-It's worth noting here that Nix is a deterministic build system (for example, stripping dates from compiled metadata so building the same source code on a different day doesn't product a different binary). In a "real life" context I would be caching the results of the nix build steps to a service like [[https://www.cachix.org/][Cachix]] so that they could be reused between builds, which becomes increasingly useful as the project grows and starts to be comprised of multiple build steps (Nix will be able to cache each "step" individually, even if you only ask for the final outcome of the process).
-
-*** Wrapping it all up
-:PROPERTIES:
-:ID:       EFEF97DA-0319-4786-9D3E-3A8EF10FA84A
-:END:
-
-Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
-
-As a bonus extra, anybody with nix installed can build and run the project without having to know .NET or have any .NET tooling installed; a very nice feature when you have others depending on your work who might want to run your code locally, but may not have chosen the same tech stack.
-
-*** Feedback? Comments?
-:PROPERTIES:
-:ID:       8640D1EF-2064-422D-AD0F-89EE5559941F
-:END:
-
-Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
-* Short term help
-:PROPERTIES:
-:RSS_PERMALINK: 2024/01/29/short_term_help.html
-:PUBDATE: 2024-01-29
-:ID:       058A2BA1-BCBC-48E0-9DD8-A3C13D080B1E
-:END:
-#+html_head_extra: <meta property="og:image" content="https://blog.mavnn.co.uk/images/swirl.svg" /><meta property="og:type" content="article" /><meta property="og:title" content="Short term help" /><meta property="og:url" content="https://blog.mavnn.co.uk/2024/01/29/short_term_help.html" />
-
-These days I generally work longer term contracts, which means I'm not often available for the more immediate "pay money for a solved problem" services I could offer while I was consulting. Right now though, I'm between long term contracts.
-
-"But Michael," I hear you say, "what problems can I give you money to solve so that I can avoid distracting my own amazing team from actually *building the product*?"
-
-I'm so glad you asked. Or, you know, you can just skip straight to the [[Logistics][logistics]] section if you already know what you want.
-
-#+toc: headlines 2
-
-** Consulting
-:PROPERTIES:
-:ID:       C124EFF2-0192-4B60-8705-64B2DCFAE9E7
-:END:
-
-** Build, packaging, and continuous integration
-:PROPERTIES:
-:ID:       8FD25D59-031C-438A-8623-FB1F7DFF0E82
-:END:
-
-I have spent a /lot/ of time getting build, test, and deployment pipelines up and running. Most of the advice out there assumes that you are using one technology and you can just use "the build tool" for that stack. Reality tends to be more complicated than that, with many projects involving multiple languages, code generation, and extensive test set up.
-
-What kind of things could your CI/CD process do for you? It depends on /your/ needs, but things that have really helped in other places include:
-
-** Making sure that CI/CD is managed *in the code repository* so that running the build locally and on the build server does the same thing in the same way, and the build can evolve in a safe, version controlled way just like the rest of your code
-:PROPERTIES:
-:ID:       2E614818-EB5D-4B97-A9AB-42A85C29E0C1
-:END:
-** Helping trace and encode the /real/ dependencies in your code base to unlock incremental, cachable build steps and reduce overall build times with concurrency
-:PROPERTIES:
-:ID:       DA79109F-1E31-4CAF-A4D4-F4E1D2E2BBD4
-:END:
-** Split your test suite so tests can be run in parallel (yes, even integration tests) and then aggregate the results
-:PROPERTIES:
-:ID:       7E33849C-08CF-483C-9C34-669F3D30A5EC
-:END:
-** Use tools like Nix or multi-step docker/podman builds to create minimal containers that only contain what they really need
-:PROPERTIES:
-:ID:       0ECE60AF-6590-4464-A051-8D2FF3CE8741
-:END:
-*** bonus extra: doing this with Nix also gives you development environments as code and reproducible deployment artifacts - same code in, same container out
-:PROPERTIES:
-:ID:       1A160052-8E2B-4B66-99F7-034AB744B650
-:END:
-
-If this is a new product/project and you just want someone to make all these considerations go away I can also build you [[*Build a project skeleton][a project skeleton]] with everything set up and ready to go for your preferred CI provider and deployment environment.
-
-** Architecture review
-:PROPERTIES:
-:ID:       66D42273-20E9-4571-9E3E-2437E9173D2B
-:END:
-
-Putting together a new project, or have a code base that's moving from "minimum viable" to "oh - I've got customers"? I can review your plans, or, given your constraints and objectives I can put together a suggested system architecture for you.
-
-It's worth noting that I don't have a personal axe to grind here. I won't tell you to use a "clean" architecture because that's my thing, or to use microservices because they are fashionable. Different architectural styles exist for a reason, and each has its own trade offs in terms of constraints you choose to accept in order to gain certain benefits.
-
-I have the advantage of having helped architect and design solutions in a variety of styles in production environments.
-
-This is a bit of a hybrid service that includes aspects of [[Technology evaluation][technology evaluation]] and [[Code audit][code audit]] with a splash of [[Domain driven design coaching][domain driven design by example]] (so that I understand what you're building) - but zoomed out to look at "how do I put all this together."
-
-** Code audit
-:PROPERTIES:
-:ID:       B7BDA429-6D17-46FD-B712-86B750E1C3A9
-:END:
-
-For ecosystems I've built decent sized projects in (.NET, TypeScript) I can spend some time reviewing your code and pointing out things you may want to improve.
-
-This isn't the kind of code review you'd do on an individual PR: this is the kind of code review where I can (as an outsider) come in with fresh eyes and point out broader patterns in your code base that may be problematic. I can also help you take your conventions and "traditions" and turn them into a coding style guide with (in many cases) automated tooling to help the team put it into practice.
-
-** Technology evaluation
-:PROPERTIES:
-:ID:       E0CFE33C-7348-4459-A534-800B83DDE672
-:END:
-
-Considering buying a new service, picking up a new programming language, or changing to a new database library? I can do the research and evaluation you need based on your requirements. I've been helping drive technology choices in organizations for well over a decade now, and I can help you spot the good, the bad, and the ugly of the options you're considering. I may even be aware of options you haven't considered.
-
-** Workshops and training
-:PROPERTIES:
-:ID:       6B7A8210-54CB-4915-BEDC-4100A7942C50
-:END:
-
-Unlike more general consultancy, workshops on topics I know well such as the ones below are a fairly fixed commitment. If you're considering using your training budget, you can assume around 2500 euros/day for up to 6 people online. In person will increase the cost but allows for groups of up to 10 people.
-
-I have also offered bespoke training courses in the past (examples: giving a team of Ruby developers a 5 day crash course in everything they needed to know to take over maintenance of a .NET code base, tailored to the project in question) but that requires significant preparation and a quote.
-
-** Domain driven design coaching
-:PROPERTIES:
-:ID:       DB44E6D2-DCF4-4997-B326-5B4E4D0B89C4
-:END:
-
-At its heart, the promise of domain driven design is simple: a code base that uses the same language as the people using it do, so that developers and domain experts can accurately share understanding of what the code /should/ do and why.
-
-Actually /doing/ domain driven design is not simple at all, because it is a process to help you model reality and it turns out [[http://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail][reality has a surprising amount of detail]].
-
-I can help with the process of getting started with DDD, help lead the early exploratory meetings between developers and domain experts, and give advice on how to capture what you discover in code while keeping everything maintainable.
-
-** Event sourcing
-:PROPERTIES:
-:ID:       F06E5183-9787-4C2F-8473-7013F31998F2
-:END:
-
-Event sourcing is a technique for capturing all the events that "have happened" and using those to calculate the current state of your system.
-
-For example, if a customer of yours moves you may publish a ~CustomerHasMoved~ event when they tell you, and a ~CustomerAddressHasChanged~ event when you have finished the business process that manages customers moving.
-
-This has enormous benefits for auditing, for being able to look at how the system has changed over time, and for being able to fix bugs "retroactively" as you don't only have the current state of the system but also all of the steps that got you here.
-
-It /also/ requires a slightly different way of thinking about your code base and some specific tooling to avoid a system that slows down over time. And it affects how you think about business constraints like data retention and [[https://www.dataprotection.ie/en/individuals/know-your-rights/right-erasure-articles-17-19-gdpr][the right to erasure]].
-
-As the saying goes: been there, done that. I can help you do it too.
-
-** Teach property based testing
-:PROPERTIES:
-:ID:       C4BBFDE6-9DAC-472E-9B19-7A48317298E8
-:END:
-
-I'm a huge fan of property based testing, and I'm more than happy to give interactive workshops on getting started with it in .NET, TypeScript, and probably other languages if you ask nicely. Why pay for this when you could download a conference talk about it for free (including ones I've given myself)? Because I'll use a piece of /your/ code to get started with you will walk away with an up and running example in your code base. This will keep us focused on the reality of doing property based testing in practice rather than seeing the nice, easy, examples you tend to be shown in a 45 minute talk.
-
-** Bespoke software creation
-:PROPERTIES:
-:ID:       393C38BD-38BD-4810-8D8C-A5541287BC8D
-:END:
-
-** Build a tool/library
-:PROPERTIES:
-:ID:       E7E0899B-3812-47AF-8F1B-DE29456F500E
-:END:
-
-I do just write good code as well. If you need a self contained library or a small solution built, I can do that for you. Whether it is parsing an obscure data format, efficient immutable directed graph data structures, or just a nice F# wrapper around a dotnet library, I will make sure it fits the style you're asking for and is well tested. Significant discounts apply if the results are going to be released under an open source licence.
-
-** Build a project skeleton
-:PROPERTIES:
-:ID:       3AC61BA9-2E22-4737-9FCE-ADA321234F5E
-:END:
-
-If you're starting a green field project, I can create a "skeleton" repository with a managed developer environment, CI/CD and testing story set up and ready to use. You and your team get to start with actually writing your product.
-
-** Logistics
-:PROPERTIES:
-:ID:       1AC24D36-F2CC-4484-B158-758BFABCCFAB
-:END:
-
-Let's cover the basics. I don't want us to waste time, so I'm going to try and keep this as straight forward as possible:
-
-** I will /always/ want to have an extensive conversation(s) and will normally want to provide a quote before starting a short term piece of work. Book a slot to talk on [[https://calendly.com/mavnn/1-hour-slot][Calendly]] or just send me an email (michael at mavnn.eu)
-:PROPERTIES:
-:ID:       CC08961C-004A-4556-808C-A79E657378E9
-:END:
-** I currently live in Italy, about an hour away from Rome. I can offer all of the services above remotely. Asking me to attend in person will add travel costs and at least 2 billable days of my time.
-:PROPERTIES:
-:ID:       9BAB29BC-540A-4B85-86D0-3C0966B57F12
-:END:
-** You can hire me by the day, but in general for short term work I quote and then charge you for the work delivered rather than bill by unit time. I will consider discounts for non-profits, student organizations, etc. It it's easier for you, I can give a quote that includes all expenses rather than reclaiming them separately. (Hint: if you're in a large organization and this is the first time you're arranging to get a consultant in - /this will be easier for you/)
-:PROPERTIES:
-:ID:       7DABA496-5D82-40D6-86E4-108E06D5FBAC
-:END:
-*** I am VAT registered in the EU
-:PROPERTIES:
-:ID:       4D401756-A805-4D41-97E4-F98E48ADB60E
-:END:
-** In the rare occasion where it turns out that I cannot deliver what I promised (I'm just one human - things like illness can happen) I will let you know promptly, and before the work is due to be delivered, so we can renegotiate where to go from the reality of the situation.
-:PROPERTIES:
-:ID:       9C7CFBDD-84DB-471C-85A1-A3F9CF1E54EA
-:END:
-
-That's about everything, I think.
-* Writing CVs for more senior roles
-:PROPERTIES:
-:RSS_PERMALINK: 2024/01/26/writing_a_cv.html
-:PUBDATE: 2024-01-26
-:ID:       4A5E23BE-0000-4E4A-A270-FF35C8ED7D06
-:END:
-A while back (/checks notes, gulps/) I wrote a fairly successful [[https://blog.mavnn.co.uk/good-developer-cvs/][blog post on the types of CVs]] I liked receiving as one of the people screening technical applications, and some of the mistakes I was seeing applicants making.
-
-What I didn't speak about at all was the "structure" of the CV; how to arrange it, and what sections to include/not include.
-
-Today somebody asked me for an actual CV for the first time in... quite a while actually. The last couple of jobs both had their own interview process that didn't include one, so that means it's been at least 5 years.
-
-Turns out that having been on the other side of the table a few more times now, and hiring for more senior candidates, my CV creation style has changed radically. The result is four broad categories of ways I've been effective in previous jobs, with a brief description of when I became senior enough to start doing that. So rather than having a big timeline of work history and education, I end up with things like:
-
-#+begin_quote
-*Training and mentoring*
-
-For over a decade I have provided mentoring and training both to team members and as a service offered. This has ranged from people learning to code for the first time (CodeInstitute), to week long courses teaching professional developers new programming languages or architectural styles (@mavnn ltd), to giving talks at conferences on topics from the obscure to the philosophical (SDDConf, NDC, F# Exchange, Lambda Days, etc).
-
-Apart from formal training I have mentored teams several times during the introduction of new programming languages, libraries, and techniques (15below, NoRedInk, Blissfully/Vendr).
-#+end_quote
-
-Again - your mileage may vary; it's not like I've had any feed back on the application yet, or even that a single response tells you much about how the CV be received in general. But I can tell you that from the other side of the table that I'm much more interested in what *you* think are the areas you've made a difference, or that you're proud of, than I am in the job descriptions of your last 5 posts and where you went to secondary school.
-
-One slight caveat: I did include my LinkedIn profile, which has all the gritty dates and things. It just wasn't what I chose to highlight in the part of the process that I can control. Your CV is your chance to control the narrative - take it.

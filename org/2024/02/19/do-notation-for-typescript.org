@@ -1,0 +1,1649 @@
+#+TITLE: Do notation for TypeScript
+
+This is rather an aside from recent blog posts, but something I found interesting none the less.
+
+Fair warning to start us off: this post assumes that you are aware of and understand "do notation" (or "computational expressions" or "monad syntax") and like the idea of having it available in TypeScript.
+
+It starts by working through a possible way of implementing a type safe representation of a sequence of monadic operations that has a much nicer user experience than nested continuation functions, and then leads into a lengthy example of both building and showing how to use a monad which I've found very useful when working in TypeScript for handling asynchronous code that needs to meaningfully respond to both successes and failures.
+
+The idea is that we're going to go from code that looks like this:
+
+#+begin_src typescript
+  export const processLaxCallback = ({
+    laxOperations,
+    commands,
+    localFunctions,
+  }: LaxCallbackDependencies) => async (httpRequest) => {
+    try {
+      const laxSignatureCheck = await laxOperations.checkSignature(httpRequest)
+      if(isFailure(signature)) {
+        await reportError(signature)
+        return
+      }
+      const laxContext = laxOperations.parseRequest({ httpRequest, laxSignatureCheck })
+      if(isFailure(laxContext)) {
+        await reportError(laxContext)
+        return
+      }
+      // ...continued
+    } catch (e) {
+      // ... etc
+    }
+  }
+
+#+end_src
+
+...to code that looks more like this:
+
+#+begin_src typescript
+  export const processLaxCallback = ({
+    laxOperations,
+    commands,
+    localFunctions,
+  }: LaxCallbackDependencies) =>
+    SolidChain.start<{ httpRequest: HttpRequest }, LaxCallBackState>()
+      .chain("laxSignatureCheck", laxOperations.checkSignature)
+      .chain("laxContext", laxOperations.parseRequest)
+      // ...continued
+#+end_src
+
+If you're impatient you can jump straight to [[*Appendix 2: A slightly excessive example of the Solid monad in action][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
+
+For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[*Appendix 3: license][appendix 3]].
+
+** The idea
+
+TypeScript has one form of monad notation already - the ~await~ keyword. Unfortunately, there isn't any way to plug into the mechanism used and define your own alternative ~bind~ implementation without doing something dangerously hacky. And, frankly, the last thing your TypeScript code needs is an other sharp edge to cut yourself on.
+
+But... what does binding a value in monad notation really do? It doesn't allow you to write code you couldn't have written anyway long hand. It allows you to give the result of a calculation in your code in name in the current scope.
+
+So: if we consider the fact that a scope is really just a mapping from names to values, and that TypeScript allows function inputs to alter the type of their output... maybe we can do something with that?
+
+** Defining a scope
+
+A type that maps names to values is reasonably easy to define in TypeScript. It looks something like this:
+
+#+BEGIN_SRC typescript
+export type Scope<Keys extends string> = {
+  [K in Keys]: any;
+};
+#+END_SRC
+
+We can say that anything we're willing to consider as a scope is a type that extends the type above: it will have some keys, which will all be strings, and they will map to some values, which will all be sub types of ~any~.
+
+Now we need a type safe way to add a value to the scope.
+
+We start with a calculated type which works out what the result of adding a value with a name to a scope should be:
+
+#+BEGIN_SRC typescript
+export type ExtendedScope<
+  OldScope extends Scope<any>,
+  NewField extends string,
+  NewValue
+> = OldScope extends any
+  ? {
+      [K in keyof OldScope | NewField]: K extends NewField
+        ? NewValue
+        : K extends keyof OldScope
+        ? OldScope[K]
+        : never;
+    }
+  : never;
+#+END_SRC
+
+
+@@html:<details><summary>@@
+...doesn't ~OldScope~ always extend ~any~?
+@@html:</summary><div class="outline-text-2">@@
+
+Well, yes. But it turns out that wrapping the calculated type in a check (even one which is always true) forces ~tsc~ to calculate what the resulting type should be.
+
+This makes no difference to what code ~tsc~ considers correct, but a big difference to how it shows it in an editor; instead of:
+
+#+begin_src typescript
+ExtendedScope<ExtendedScope<{ aDate: DateTime }, "aNumber", number>, "aString", string>
+#+end_src
+
+...tool tips and error messages will show:
+
+#+begin_src typescript
+  {
+      aDate: DateTime,
+      aNumber: number,
+      aString: string
+  }
+#+end_src
+
+...which is a heck of a lot easier to work with.
+
+@@html:</div></div></details>@@
+
+This basically says we want a new type that has all the keys in the old scope /and/ the new key, and the fields in the new context are the same type as the old context except the field that has the name ~NewField~ which will be of type ~NewValue~.
+
+Now we can write a wrapper function that actually does the work at runtime:
+
+#+BEGIN_SRC typescript
+export const extendScope = <
+  OldScope extends Scope<any>,
+  NewField extends string,
+  NewValue
+>(
+  oldScope: OldScope,
+  newField: NewField,
+  newValue: NewValue
+) => {
+  const addToScope = {
+    [newField]: newValue,
+  };
+  return {
+    ...oldScope,
+    ...addToScope,
+  } as ExtendedScope<OldScope, NewField, NewValue>;
+};
+#+END_SRC
+
+You may be wondering why we bothered with the type definition above given that ~tsc~ will try and infer the type of a "splat" like the one we return above.
+
+@@html:<details><summary>@@
+The short answer is: ~tsc~ infers it wrong.
+@@html:</summary><div class="outline-text-2">@@
+
+The longer answer is: ~tsc~ infers it wrong when ~NewField~ is the same as an existing field name, but ~NewValue~ is different to the type of that field on ~OldContext~.
+
+~tsc~ always infers the result of splatting two generic objects (~A~ and ~B~) as being ~A & B~. But if you think about an example like this one:
+
+#+BEGIN_SRC typescript
+type AString = { myField: string };
+type ANumber = { myField: number };
+
+const splat = <A, B>(a: A, b: B) => ({ ...a, ...b });
+
+const result = splat<AString, ANumber>(
+  { myField: "hello" },
+  { myField: 10 },
+);
+#+END_SRC
+
+You can see that ~tsc~ inferring the type of ~result~ as ~AString & ANumber~ is obviously incorrect. Interestingly, it works out correctly that it is ~ANumber~ if you create the ~splat~ function with fixed types known at compile time, but that doesn't help us much here.
+@@html:</div></details>@@
+
+This is all starting to look quite hopeful with us now having a representation of a scope, and a type safe way to add values to it.
+
+** Building an operation
+
+The next question we need to answer is what is this going to be the scope /of/. Monad friendly syntax normally binds names in the scope of a function body, so let's generalize that idea slightly (and with a lot of hand waving) to the idea of the scope of an operation.
+
+We want to be able to do two main things with this operation: we want to be able to add steps to it (using the scope accumulated so far), and we want to be able to execute it. The idea of building up an operation like this brings to mind the appropriately named "builder" pattern, where we use a class with some state to "build" up the thing we want. I'm going to call the "add step" method ~chain~ (because it feels a fairly intuitive name for what's happening) and the "execute" method ~execute~ (no reason needed). To keep the theme, we'll call the builder class a ~SomethingChain~ where something is a monad.
+
+If such a builder class were to exist, it would allow us to write code like this:
+
+#+begin_src typescript
+export const monadTest = new MonadChain((name: string) =>
+  Monad.pure({ initialInput: name }),
+)
+  .chain("punctuation", () => Monad.pure("!"))
+  .chain("finalGreeting", (scope) =>
+    Monad.pure(
+      `Hello ${scope.initialInput}${scope.punctuation}`,
+    ),
+  ).execute;
+#+end_src
+
+The type of ~monadTest~ above is a function that takes a string, and returns a monad value of an object with three string fields: "initialInput", "punctuation", and "finalGreeting". As you can see, each step in the chain adds to or overwrites a value in the scope while leaving the rest of the scope available for use later.
+
+The pattern of how we implement the builder for each type of monad is going to be pretty much the same (that's the point), but we can also play some neat tricks based on the specific monad we're implementing. The magic is in the ~chain~ method, which wraps a perfectly normal "bind" with a call to ~extendScope~ from above. Let's see the pattern first in its purest possible form by creating an identity monad chain, along with some comments in the ~chain~ method.
+
+#+begin_src typescript
+    export type Monad<T> = T;
+
+    export namespace Monad {
+      export const bind = <A, B>(
+        prev: Monad<A>,
+        func: (prev: A) => Monad<B>,
+      ): Monad<B> => {
+        return func(prev);
+      };
+      export const pure = <A,>(value: A): Monad<A> => value;
+    }
+
+    export class MonadChain<Input, OutputScope extends Scope<any>> {
+      private readonly operation: (
+        input: Input,
+      ) => Monad<OutputScope>;
+      constructor(
+        starter: (input: Input) => Monad<OutputScope>,
+      ) {
+        this.operation = starter;
+      }
+
+      execute(input: Input): Monad<OutputScope> {
+        return this.operation(input);
+      }
+
+      chain<NextOutput, ResultName extends string>(
+        resultName: ResultName,
+        next: (previous: OutputScope) => Monad<NextOutput>,
+      ): MonadChain<
+        Input,
+        ExtendedScope<OutputScope, ResultName, NextOutput>
+      > {
+        // We need to build the operation to pass to
+        // the constructor of the chain we're going
+        // to return
+        const chainedOperation = (
+          input: Input,
+        ): Monad<
+          ExtendedScope<OutputScope, ResultName, NextOutput>
+        > => {
+          // Get the monadic value of the chain
+          // up to this point.
+          const previousResult = this.operation(input);
+          return Monad.bind(
+            previousResult,
+            (output: OutputScope) => {
+              // Use the output from the chain so far /twice/.
+              // The first time to work out the new value that is
+              // going to be added to the scope, and the second
+              // time to as the starting scope passed to ~extendScope~
+              return Monad.bind(next(output), (nextOutput) => {
+                return Monad.pure(
+                  extendScope(output, resultName, nextOutput),
+                );
+              });
+            },
+          );
+        };
+        // Wrap the function back into the builder class
+        // so we can carry on calling chain on it
+        return new MonadChain(chainedOperation);
+      }
+    }
+#+end_src
+
+** Some working examples
+
+*** Maybe
+
+Let's start with the classics. Tried of handling nulls and undefined manually? Redefine our bind method and we're done: apart from changing the name, nothing else changes.
+
+#+begin_src typescript
+export type Maybe<T> = T | null | undefined;
+
+export namespace Maybe {
+  export const bind = <A, B>(
+    prev: Maybe<A>,
+    func: (prev: A) => Maybe<B>,
+  ): Maybe<B> => {
+    if(prev === null || prev === undefined) {
+        return null;
+    } else {
+        return func(prev);
+    }
+  };
+  export const pure = <A,>(value: A): Maybe<A> => value;
+}
+#+end_src
+
+
+@@html:<details><summary>@@
+The rest of the code is behind the cut to avoid us being too repetitive.
+@@html:</summary><div class="outline-text-2">@@
+
+#+begin_src typescript
+ export class MaybeChain<Input, OutputScope extends Scope<any>> {
+  private readonly operation: (
+    input: Input,
+  ) => Maybe<OutputScope>;
+  constructor(
+    starter: (input: Input) => Maybe<OutputScope>,
+  ) {
+    this.operation = starter;
+  }
+
+  execute(input: Input): Maybe<OutputScope> {
+    return this.operation(input);
+  }
+
+  chain<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => Maybe<NextOutput>,
+  ): MaybeChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>
+  > {
+    const chainedOperation = (
+      input: Input,
+    ): Maybe<
+      ExtendedScope<OutputScope, ResultName, NextOutput>
+    > => {
+      const previousResult = this.operation(input);
+      return Maybe.bind(
+        previousResult,
+        (output: OutputScope) => {
+          return Maybe.bind(next(output), (nextOutput) => {
+            return Maybe.pure(
+              extendScope(output, resultName, nextOutput),
+            );
+          });
+        },
+      );
+    };
+    return new MaybeChain(chainedOperation);
+  }
+}
+
+export const maybeTest = new MaybeChain((name: string) =>
+  Maybe.pure({ initialInput: name }),
+)
+  .chain("punctuation", () => Maybe.pure("!"))
+  .chain("finalGreeting", (scope) =>
+    Maybe.pure(
+      `Hello ${scope.initialInput}${scope.punctuation}`,
+    ),
+  ).execute; 
+#+end_src
+@@html:</div></details>@@
+
+*** AsyncMaybe
+
+Of course, TypeScript has fairly robust tools for handling null and undefined already. But they get pretty painfully verbose if you start needing to handle a lot of asynchronous calls. Chains to the rescue!
+
+Our monad definition now looks like this:
+
+#+begin_src typescript
+export type AsyncMaybe<T> = Promise<T | null | undefined>;
+
+export namespace AsyncMaybe {
+  export const bind = async <A, B>(
+    prevAsync: AsyncMaybe<A>,
+    func: (prev: A) => AsyncMaybe<B>,
+  ): AsyncMaybe<B> => {
+    const prev = await prevAsync
+    if(prev === null || prev === undefined) {
+        return null;
+    } else {
+        return func(prev);
+    }
+  };
+  export const pure = <A,>(value: A): AsyncMaybe<A> => Promise.resolve(value);
+}
+#+end_src
+
+After a quick search and replace, we can now use our chain to start writing significantly clearer code (in my opinion, anyway!).
+
+#+begin_src typescript
+  // An interface representing some external services
+  export interface MaybeData {
+    getName: (userId: string) => Promise<string | null>;
+    getPunctuation: (
+      name: string,
+    ) => Promise<string | undefined>;
+  }
+
+  // Without Chain
+  export const before = async ({
+    userId,
+    maybeData,
+  }: {
+    userId: string;
+    maybeData: MaybeData;
+  }) => {
+    const name = await maybeData.getName(userId);
+    if (name === null) {
+      return null;
+    }
+    const punctuation = await maybeData.getPunctuation(name);
+    if (punctuation === undefined) {
+      return null;
+    }
+    return `Hello ${name}${punctuation}`;
+  };
+
+  // With Chain
+  export const after = new AsyncMaybeChain(
+    AsyncMaybe.pure<{ userId: string; maybeData: MaybeData }>,
+  )
+    .chain("name", (s) => s.maybeData.getName(s.userId))
+    .chain("punctuation", (s) =>
+      s.maybeData.getPunctuation(s.name),
+    )
+    .chain("result", (s) =>
+      AsyncMaybe.pure(`${s.name}{s.punctuation}`),
+    ).execute;
+#+end_src
+
+Nicer, but still not fully nice. The constructor looks a bit weird, it's annoying that we have to call ~AsyncMaybe.pure~ in the last step, and we're returning our entire internal scope at the end of every operation.
+
+We can deal with each of these fairly easily though, because one thing the builder pattern is great at is providing an API for building things.
+
+A static method gives us a more intuitive way of starting the chain:
+
+#+begin_src typescript
+  export class AsyncMaybeChain<
+    Input,
+    OutputScope extends Scope<any>,
+  > {
+    // ...snip rest of code...
+
+    static start<
+      InputScope extends Scope<any>,
+    >(): AsyncMaybeChain<InputScope, InputScope> {
+      return new AsyncMaybeChain(AsyncMaybe.pure<InputScope>);
+    }
+  }
+#+end_src
+
+We can expose a map method on the chain to avoid having to manually wrap parts of the chain in ~pure~:
+
+#+begin_src typescript
+   map<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => NextOutput,
+  ): AsyncMaybeChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>
+  > {
+    return this.chain(resultName, (scope) =>
+      AsyncMaybe.pure(next(scope)),
+    );
+  }
+#+end_src
+
+And finally we can add an ~executeTarget~ method as an alternative to ~execute~ that returns only a single field from the scope.
+
+#+begin_src typescript
+  executeTarget<ResultName extends keyof OutputScope>(resultName: ResultName) {
+    return (input: Input) =>
+      AsyncMaybe.bind(this.execute(input), (outputScope) =>
+        AsyncMaybe.pure(outputScope[resultName])
+      );
+  }
+#+end_src
+
+This allows us to change our code to be just that bit cleaner and clearer:
+
+#+begin_src typescript
+// With Chain
+export const after = AsyncMaybeChain.start<{
+  userId: string;
+  maybeData: MaybeData;
+}>()
+  .chain("name", (s) => s.maybeData.getName(s.userId))
+  .chain("punctuation", (s) =>
+    s.maybeData.getPunctuation(s.name),
+  )
+  .map("result", (s) => `${s.name}{s.punctuation}`)
+  .executeTarget("result");
+#+end_src
+
+
+@@html:<details><summary>@@
+The full code is here if you want to be able to see it all in context.
+@@html:</summary><div class="outline-text-2">@@
+
+#+begin_src typescript
+export type AsyncMaybe<T> = Promise<T | null | undefined>;
+
+export namespace AsyncMaybe {
+  export const bind = async <A, B>(
+    prevAsync: AsyncMaybe<A>,
+    func: (prev: A) => AsyncMaybe<B>,
+  ): AsyncMaybe<B> => {
+    const prev = await prevAsync;
+    if (prev === null || prev === undefined) {
+      return null;
+    } else {
+      return func(prev);
+    }
+  };
+  export const pure = <A,>(value: A): AsyncMaybe<A> =>
+    Promise.resolve(value);
+}
+
+export class AsyncMaybeChain<
+  Input,
+  OutputScope extends Scope<any>,
+> {
+  private readonly operation: (
+    input: Input,
+  ) => AsyncMaybe<OutputScope>;
+  constructor(
+    starter: (input: Input) => AsyncMaybe<OutputScope>,
+  ) {
+    this.operation = starter;
+  }
+
+  execute(input: Input): AsyncMaybe<OutputScope> {
+    return this.operation(input);
+  }
+
+  chain<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => AsyncMaybe<NextOutput>,
+  ): AsyncMaybeChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>
+  > {
+    const chainedOperation = (
+      input: Input,
+    ): AsyncMaybe<
+      ExtendedScope<OutputScope, ResultName, NextOutput>
+    > => {
+      const previousResult = this.operation(input);
+      return AsyncMaybe.bind(
+        previousResult,
+        (output: OutputScope) => {
+          return AsyncMaybe.bind(
+            next(output),
+            (nextOutput) => {
+              return AsyncMaybe.pure(
+                extendScope(output, resultName, nextOutput),
+              );
+            },
+          );
+        },
+      );
+    };
+    return new AsyncMaybeChain(chainedOperation);
+  }
+
+  map<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => NextOutput,
+  ): AsyncMaybeChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>
+  > {
+    return this.chain(resultName, (scope) =>
+      AsyncMaybe.pure(next(scope)),
+    );
+  }
+
+  executeTarget<ResultName extends keyof OutputScope>(
+    resultName: ResultName,
+  ) {
+    return (input: Input) =>
+      AsyncMaybe.bind(
+        this.execute(input),
+        (outputScope) => outputScope[resultName],
+      );
+  }
+
+  static start<
+    InputScope extends Scope<any>,
+  >(): AsyncMaybeChain<InputScope, InputScope> {
+    return new AsyncMaybeChain(AsyncMaybe.pure<InputScope>);
+  }
+}
+#+end_src
+@@html:</div></details>@@
+
+** Diving deeper: handling errors with style and panache
+
+For our last example we're going to both take things up a notch, and take a bit more advantage of TypeScript's type level programming.
+
+We're going to create what I'm going to call, for brevity, the ~Solid~ monad. (Technically it's an asynchronous either state monad - mix and match order to taste - but that's a bit of a mouth full). This allows us to think about how to write our code in a slightly different way, separating out the logic of our "happy path" from error handling in a way that would be either very verbose or completely break type safety without some tooling like this builder.
+
+Let's first look at the kind of use cases where this monad is useful. Imagine we've created an integration with the "Lax" messaging service, and now when a customer clicks a button in one of the messages we send out our code has to handle a call back from Lax. But we don't know anything about the incoming request initially. We don't know whether it actually comes from Lax, whether we can find the customer organization that the message was sent to, which user of Lax in that organization clicked the button, which user in our application that Lax user maps to...
+
+This uncertainty means there's also numerous ways this process could go wrong. Maybe the message isn't actually from Lax (who cryptographically sign their callback payloads). Maybe our database is down. Or maybe Bob clicked the button 30 seconds after Fred did and you can't do that thing anymore. We also need to respond differently and to different people depending on what has failed.
+
+To deal with this, each step in the process can either succeed or fail. What we want to do in the case of failure is often highly dependent on both what type of failure has occurred and what information we already have available. As such, it's common to see code that either returns a union type of ~Success | SemanticallyMeaningfulErrorType(s)~ or where each operation in turn is wrapped in ~try ... catch~ blocks to respond to exceptions in context.
+
+Normally in TypeScript the resulting code will end up looking something like this:
+
+#+begin_src typescript
+  export const withoutChain =
+   ({ laxOperations, commands, localFunctions }: LaxCallbackDependencies) =>
+   async (httpRequest: HttpRequest) => {
+     const signatureOk = await laxOperations.checkSignature({ httpRequest });
+     if (signatureOk.result.kind !== "success") {
+       console.log("Error to internal logging service");
+       return;
+     }
+
+     const laxContext = await laxOperations.parseRequest({
+       laxSignatureCheck: signatureOk.result.value,
+     });
+     if (laxContext.result.kind !== "success") {
+       console.log("Error to internal logging service");
+       return;
+     }
+
+     const command = await commands.parseUntrustedCommand({
+       untrustedCommand: laxContext.result.value.actionPayload,
+     });
+     if (command.result.kind !== "success") {
+       console.log("Error to internal logging service");
+       // Oh! We know how to contact the user now as well!
+       await laxOperations.reply({
+         laxContext: laxContext.result.value,
+         reply: "A suitable error message" as any,
+       });
+       return;
+     }
+
+     // ... more code here ...
+   };
+#+end_src
+
+This code isn't ideal. Admittedly, it has one big advantage: anyone who has written any TypeScript can immediately see how it works. But it also has a number of flaws. The most important one is that it is so verbose, and in such a repetitive way, that it is actually hard to follow the flow of what the code "wants" to do - the sequence of operations that will be carried out if everything works as expected. Trying to work out how a particular type of error will be handled, or even which types of errors might occur, is even harder.
+
+What if we could separate out the straight forward intent of our code on the one hand, but also ensure we handle all of the possible failure states? What if we could compose together multiple operations which each, individually, know how they might fail and end up with a larger operation that /still/ knows all the ways it can fail.
+
+Business logic that looks like this:
+
+#+begin_src typescript
+export const processLaxCallback = ({
+  laxOperations,
+  commands,
+  localFunctions,
+}: LaxCallbackDependencies) =>
+  SolidChain.start<HttpRequest, LaxCallBackState>()
+    .chain("laxSignatureCheck", laxOperations.checkSignature)
+    .chain("laxContext", laxOperations.parseRequest)
+    .tap(({ laxContext }) => Solid.set("laxContext", laxContext))
+    .chain("command", ({ laxContext }) =>
+      commands.parseUntrustedCommand({
+        untrustedCommand: laxContext.actionPayload,
+      })
+    )
+    .chain("userInfo", laxOperations.findUserAndOrganization)
+    .tap(({ userInfo }) => Solid.set("user", userInfo.user))
+    .tap(({ userInfo }) => Solid.set("organization", userInfo.organization))
+    .chain("eventsCaused", commands.executeCommand)
+    .map("reply", localFunctions.createSuccessResponse)
+    .tap(laxOperations.reply)
+    .executeTarget("eventsCaused");
+#+end_src
+
+Once we've called our code, we can then exhaustively handle any errors it may have produced, safe in the knowledge that if any of the operations we're depending on add a new failure mode the compiler will force us to deal with them appropriately. This consolidates all of our error handling into an other clear and easy to read piece of code, generally looking something like the following:
+
+#+begin_src typescript
+  switch (processResult.result.failure.type) {
+    case "NotPermitted":
+      await reportError("You can't do that");
+      break;
+    case "ValidationFailed":
+      await reportError("You sent the wrong information");
+      break;
+    case "UnrecognizedCommand":
+      await reportError(
+        "Something is wrong with the message we sent you, sorry!"
+      );
+      break;
+    case "OrganizationNotFound":
+    case "UserNotFound":
+      await reportError("You don't seem to be fully set up on Lax yet");
+      break;
+    case "UnableToParseLaxContext":
+    case "InvalidLaxSignature":
+      await reportError("Invalid callback");
+      break;
+    case "CouldNotContactLax":
+      await reportError(
+        "We tried to send you a message, but something went wrong at Lax's end."
+      );
+      break;
+    case "LaxRefusedReply":
+      await reportError(
+        "We tried to send you a message but something went wrong on our end."
+      );
+      break;
+    case "UnhandledException":
+      await reportError(
+        "Something went wrong, our support staff will look into it"
+      );
+      break;
+    default:
+      // this is just a function that takes and returns "never"
+      // to enforce completeness
+      return exhausted(processResult.result.failure);
+  }
+#+end_src
+
+
+Let's do it! We need to both build out our monad, and then also think about how to write the code that uses it.
+
+*** The monad itself
+
+First let's build the monad we're going to need. To write the code we want to, we know that we need a few properties. Our operations will frequently be asynchronous, so we need to deal with that. They need to be able to declare how they can fail, so we need them to return a success or failure result type. And they need to be able to capture information during the operation /even if the operation then fails/ so that we can make that information available during error handling.
+
+Standing on the shoulders of giants, this sounds very much like we're talking about a state monad stacked on top of an either (sometimes called result) monad. The type of a state monad is a function that takes the state so far, and returns the state and a result. The either monad says that the result in question can be either a success or a failure.
+
+We're going to place one more restriction on the "state" type, because in our case it will nearly always be true and it simplifies some of the types: all of the fields on the state object being passed through the operations are optional.
+
+Let's try and model that as a type in TypeScript.
+
+#+begin_src typescript
+export type SolidSuccess<Success> = {
+  kind: "success";
+  value: Success;
+};
+
+export type SolidFailure<Failure> = {
+  kind: "failure";
+  failure: Failure;
+};
+
+export type Solid<Success, Failure, State extends Scope<any>> = (
+  state: Partial<State>
+) => Promise<{
+  state: Partial<State>;
+  result: SolidSuccess<Success> | SolidFailure<Failure>;
+}>;
+#+end_src
+
+Now we need a bind and a pure method.
+
+#+begin_src typescript
+export const Solid = {
+  pure: <Success, State extends Scope<any>>(
+    value: Success
+  ): Solid<Success, never, State> => {
+    return async (state) => ({ state, result: { kind: "success", value } });
+  },
+  bind: <Success, NextSuccess, Failure, NextFailure, State extends Scope<any>>(
+    prev: Solid<Success, Failure, State>,
+    func: (success: Success) => Solid<NextSuccess, NextFailure, State>
+  ): Solid<NextSuccess, Failure | NextFailure, State> => {
+    return async (state: Partial<State>) => {
+      const awaitedPrevious = await prev(state);
+      const prevResult = awaitedPrevious.result;
+      if (prevResult.kind === "success") {
+        const next = await func(prevResult.value)(state);
+        return next;
+      } else {
+        return { state, result: prevResult };
+      }
+    };
+  }
+};
+#+end_src
+
+This, as normal, is where the magic really happens. ~pure~ is fairly straight forward; we can lift any concrete value into our monad type by creating a function that takes the current state and returns the same state unchanged along with the concrete value as a "success" result.
+
+~bind~, on the other hand, might have a type signature that is different from what you would expect. It does not limit the failure type of the continuation function to match the existing monad, but instead declares that the new resulting monad has a failure type of ~Failure | NextFailure~. This means that if we, say, start with a monad that has a failure type of ~NetworkFailure~ and we bind a follow up operation with a failure type of ~FileSystemFailure~ we get a resulting monad that says it could fail with either a network /or/ a file system failure.
+
+Pretty snazzy, and one of the areas where TypeScript genuinely shines.
+
+Life is much nicer if we also add some helper methods; a short hand for returning a failure, methods to get, set, and update the state being passed through, and finally a helper that captures thrown exceptions and turns them into a typed ~UnhandledException~ failure type while also capturing the stack trace.
+
+#+begin_src typescript
+  export type UnhandledExceptionFailure = {
+    type: "UnhandledException";
+    thrown: any;
+  };
+
+  export const Solid = {
+    // pure and bind from above go here
+    failure: <Failure, State extends Scope<any>>(
+      failure: Failure
+    ): Solid<never, Failure, State> => {
+      return async (state) => ({ state, result: { kind: "failure", failure } });
+    },
+    get: <Failure, State extends Scope<any>>(): Solid<
+      Partial<State>,
+      Failure,
+      State
+    > => {
+      return async (state: Partial<State>) => ({
+        state,
+        result: { kind: "success", value: state },
+      });
+    },
+    modify: <State extends Scope<any>>(
+      func: (prev: Partial<State>) => Partial<State>
+    ): Solid<Partial<State>, never, State> => {
+      return async (state: Partial<State>) => {
+        const newState = func(state);
+        return {
+          state: newState,
+          result: { kind: "success", value: newState },
+        };
+      };
+    },
+    set: <State extends Scope<any>, Key extends keyof State>(
+      key: Key,
+      value: State[Key]
+    ): Solid<void, never, State> => {
+      return Solid.bind(
+        Solid.modify((prev) => ({ ...prev, [key]: value })),
+        () => Solid.pure(undefined)
+      );
+    },
+    noThrow: <Success, Failure, State extends Scope<any>>(
+      solid: Solid<Success, Failure, State>
+    ): Solid<Success, Failure | UnhandledExceptionFailure, State> => {
+      return (state: Partial<State>) => {
+        try {
+          return solid(state);
+        } catch (e) {
+          return Solid.failure({
+            type: "UnhandledException" as const,
+            thrown: e,
+          })(state);
+        }
+      };
+    },
+  };
+#+end_src
+
+We have a monad now, so our chain should look very familiar; let's put the whole thing here in full so we can admire it in all its abstract beauty. We've added a ~tap~ method which puts an operation in the chain that doesn't add anything to the scope, useful for things like updating the state or sending messages, and we've added a call to ~noThrow~ in the "execute" methods to make sure that we don't accidentally forget to capture exceptions and so break all our lovely new error handling. Apart from that, it should all look very familiar.
+
+#+begin_src typescript
+export class SolidChain<
+  Input,
+  OutputScope extends Scope<any>,
+  Failure,
+  State extends Scope<any>
+> {
+  private readonly operation: (
+    input: Input
+  ) => Solid<OutputScope, Failure, State>;
+  constructor(starter: (input: Input) => Solid<OutputScope, Failure, State>) {
+    this.operation = starter;
+  }
+
+  execute(
+    input: Input
+  ): Solid<OutputScope, Failure | UnhandledExceptionFailure, State> {
+    return Solid.noThrow(this.operation(input));
+  }
+
+  chain<NextOutput, NextFailure, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => Solid<NextOutput, NextFailure, State>
+  ): SolidChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>,
+    Failure | NextFailure,
+    State
+  > {
+    const chainedOperation = (
+      input: Input
+    ): Solid<
+      ExtendedScope<OutputScope, ResultName, NextOutput>,
+      Failure | NextFailure,
+      State
+    > => {
+      const previousResult = this.operation(input);
+      return Solid.bind(previousResult, (output: OutputScope) => {
+        return Solid.bind(next(output), (nextOutput) => {
+          return Solid.pure(extendScope(output, resultName, nextOutput));
+        });
+      });
+    };
+    return new SolidChain(chainedOperation);
+  }
+
+  map<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => NextOutput
+  ): SolidChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>,
+    Failure,
+    State
+  > {
+    return this.chain(resultName, (scope) => Solid.pure(next(scope)));
+  }
+
+  tap<NextFailure>(
+    func: (previous: OutputScope) => Solid<void, NextFailure, State>
+  ): SolidChain<Input, OutputScope, Failure | NextFailure, State> {
+    return new SolidChain((input: Input) =>
+      Solid.bind(this.operation(input), (scope) =>
+        Solid.bind(func(scope), () => Solid.pure(scope))
+      )
+    );
+  }
+
+  executeTarget<ResultName extends keyof OutputScope>(
+    resultName: ResultName
+  ): (
+    input: Input
+  ) => Solid<
+    OutputScope[ResultName],
+    Failure | UnhandledExceptionFailure,
+    State
+  > {
+    return (input: Input) =>
+      Solid.noThrow(
+        Solid.bind(this.execute(input), (outputScope) =>
+          Solid.pure(outputScope[resultName])
+        )
+      );
+  }
+
+  static start<
+    InputScope extends Scope<any>,
+    State extends Partial<Scope<any>>
+  >(): SolidChain<InputScope, InputScope, never, State> {
+    return new SolidChain(Solid.pure<InputScope, State>);
+  }
+}
+#+end_src
+
+*** Writing the code
+
+To fully take advantage of our new shiny monad, there's a few simple rules we want to follow.
+
+ + It should be easy to distinguish between error types; a discriminator field is great for this
+ + We should aim to write our "business" functions to take a single object argument, so that a scope object can be built up that can call them
+ + If at all possible, those arguments should use well known field names for well known pieces of data
+
+This means that we'll end up with external dependencies represented as functions that look something like this (either globally, or wrapped locally for use in the chain if you're not basing your whole code architecture off this blog post: shame on you!):
+
+#+begin_src typescript
+export interface Commands {
+  parseUntrustedCommand: <State extends Scope<any>>(scope: {
+    untrustedCommand: any;
+  }) => Solid<Command, { type: "UnrecognizedCommand"; message: string }, State>;
+  executeCommand: <State extends Scope<any>>(args: {
+    userInfo: { user: User; organization: Organization };
+    command: Command;
+  }) => Solid<
+    Events,
+    { type: "NotPermitted" | "ValidationFailed"; message: string },
+    State
+  >;
+}
+#+end_src
+
+Following these patterns and combining them with the type safety of the chain builder is enormously powerful, especially for helping out new developers. For example, if you want to call the ~executeCommand~ operation you'll find that you can't put it in the chain before the operations that get the command and the user info, and you can't return a chain that doesn't explicitly flag that it may fail with the "NotPermitted" and "ValidationFailed" errors.
+
+** Appendix 1: Stealing from the best
+
+The advantage of using a standard abstraction like a monad is that someone has done most of the hard thinking already for you. In TypeScript we don't have a nice way of defining code that works on "anything which is a monad", but in Haskell you can - and that means that there's [[https://hackage.haskell.org/package/base-4.19.0.0/docs/Control-Monad.html#g:4][collections of functions]] that you can refer to that are implemented on the basis of something being a monad. This means that if you have a working knowledge of Haskell (or Scala, or an other language where someone has done this work for you already) you can easily add features to your ~XChain~ class as you discover you need them.
+
+For example, what do you do if you have an array of inputs that you want to map using a ~Solid~ returning function?
+
+Well, if you check the link above you'll find the ~mapM~ function with the signature ~mapM :: (Traversable t, Monad m) => (a -> m b) -> t a -> m (t b)~. A ~Traversable~ is roughly an iterable in TypeScript speak, so we can check how ~mapM~ is implemented on a type that would be useful in TypeScript. It turns out it is an alias for the ~traverse~ function of whichever ~t~ is traversable, so we pick the list implementation as probably being close to what we'd want [[https://hackage.haskell.org/package/base-4.19.0.0/docs/src/Data.Traversable.html#line-299][and it is]]:
+
+#+begin_src haskell
+instance Traversable [] where
+  {-# INLINE traverse #-} -- so that traverse can fuse
+  traverse f = List.foldr cons_f (pure [])
+    where cons_f x ys = liftA2 (:) (f x) ys
+#+end_src
+
+Hmm. ~liftA2~ is a bit weirdly named but it allows a binary operation to happen in our monadic context. We can in turn look up a default implementation of /that/ in terms of what's available in a monad, and we end up with some new helper functions on monad.
+
+#+begin_src typescript
+  export const Solid = {
+    // All the existing monad operations like bind etc...
+    map: <Previous, Next, Failure, State extends Scope<any>>(
+      func: (previous: Previous) => Next,
+      prev: Solid<Previous, Failure, State>
+    ) => {
+      return Solid.bind(prev, (success) => Solid.pure(func(success)));
+    },
+    apply: <Success, NextSuccess, Failure, NextFailure, State extends Scope<any>>(
+      funcInMonad: Solid<(prev: Success) => NextSuccess, NextFailure, State>,
+      prev: Solid<Success, Failure, State>
+    ): Solid<NextSuccess, Failure | NextFailure, State> => {
+      return Solid.bind(funcInMonad, (func) => Solid.map(func, prev));
+    },
+    lift2: <
+      Left,
+      Right,
+      Result,
+      LeftFailure,
+      RightFailure,
+      State extends Scope<any>
+    >(
+      operation: (left: Left, right: Right) => Result,
+      left: Solid<Left, LeftFailure, State>,
+      right: Solid<Right, RightFailure, State>
+    ): Solid<Result, LeftFailure | RightFailure, State> => {
+      return Solid.apply(
+        Solid.map((left: Left) => (right: Right) => operation(left, right), left),
+        right
+      );
+    },
+    traverse: <Input, Success, Failure, State extends Scope<any>>(
+      inputs: Input[],
+      func: (input: Input) => Solid<Success, Failure, State>
+    ): Solid<Success[], Failure, State> => {
+      return inputs.reduce<Solid<Success[], Failure, State>>(
+        (acc, next) =>
+          Solid.lift2(
+            (results: Success[], next: Success) => {
+              results.push(next);
+              return results;
+            },
+            acc,
+            func(next)
+          ),
+        Solid.pure([])
+      );
+    },
+  };
+#+end_src
+
+Did translating that make my brain hurt a bit? Yes, but it made my brain hurt a lot less than working out that logic for myself. And now you are just a cut and paste away from being able to reuse this same code on any other monads you want to create, and in your solid chains you can right things like:
+
+#+begin_src typescript
+export const traverseExample =
+  (commandOperations: Commands) => (untrustedInput: any[]) =>
+    SolidChain.start<
+      {
+        untrustedInput: any[];
+        userInfo: { user: User; organization: Organization };
+      },
+      {}
+    >()
+      .chain("parsedCommands", ({ untrustedInput }) =>
+        Solid.traverse(untrustedInput, commandOperations.parseUntrustedCommand)
+      )
+      .chain("resultingEvents", ({ parsedCommands, userInfo }) =>
+        Solid.traverse(parsedCommands, (command) =>
+          commandOperations.executeCommand({ command, userInfo })
+        )
+      )
+      .executeTarget("resultingEvents");
+#+end_src
+
+Warning: there's an argument for not adding too many of these helpers too quickly or to not make all of the intermediate abstractions publicly available. Developers new to functional programming will quickly see the point of a method like ~traverse~ when shown an example, but finding something like ~lift2~ is going to leave a lot of people scratching their heads.
+
+** Appendix 2: A slightly excessive example of the Solid monad in action
+
+@@html:<details><summary>@@
+You can cut and paste this big fat code block into the TS editor of your choice and have a play with the Solid monad. Go on. It's fun!
+@@html:</summary><div class="outline-text-2">@@
+
+
+#+begin_src typescript
+export type Scope<Keys extends string> = {
+  [K in Keys]: any;
+};
+
+export type ExtendedScope<
+  OldScope extends Scope<any>,
+  NewField extends string,
+  NewValue
+> = OldScope extends any
+  ? {
+      [K in keyof OldScope | NewField]: K extends NewField
+        ? NewValue
+        : K extends keyof OldScope
+        ? OldScope[K]
+        : never;
+    }
+  : never;
+
+export const extendScope = <
+  OldScope extends Scope<any>,
+  NewField extends string,
+  NewValue
+>(
+  oldScope: OldScope,
+  newField: NewField,
+  newValue: NewValue
+) => {
+  const addToScope = {
+    [newField]: newValue,
+  };
+  return {
+    ...oldScope,
+    ...addToScope,
+  } as ExtendedScope<OldScope, NewField, NewValue>;
+};
+
+export type AsyncMaybe<T> = Promise<T | null | undefined>;
+
+export namespace AsyncMaybe {
+  export const bind = async <A, B>(
+    prevAsync: AsyncMaybe<A>,
+    func: (prev: A) => AsyncMaybe<B>
+  ): AsyncMaybe<B> => {
+    const prev = await prevAsync;
+    if (prev === null || prev === undefined) {
+      return null;
+    } else {
+      return func(prev);
+    }
+  };
+  export const pure = <A>(value: A): AsyncMaybe<A> => Promise.resolve(value);
+}
+
+export class AsyncMaybeChain<Input, OutputScope extends Scope<any>> {
+  private readonly operation: (input: Input) => AsyncMaybe<OutputScope>;
+  constructor(starter: (input: Input) => AsyncMaybe<OutputScope>) {
+    this.operation = starter;
+  }
+
+  execute(input: Input): AsyncMaybe<OutputScope> {
+    return this.operation(input);
+  }
+
+  chain<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => AsyncMaybe<NextOutput>
+  ): AsyncMaybeChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>
+  > {
+    const chainedOperation = (
+      input: Input
+    ): AsyncMaybe<ExtendedScope<OutputScope, ResultName, NextOutput>> => {
+      const previousResult = this.operation(input);
+      return AsyncMaybe.bind(previousResult, (output: OutputScope) => {
+        return AsyncMaybe.bind(next(output), (nextOutput) => {
+          return AsyncMaybe.pure(extendScope(output, resultName, nextOutput));
+        });
+      });
+    };
+    return new AsyncMaybeChain(chainedOperation);
+  }
+
+  map<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => NextOutput
+  ): AsyncMaybeChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>
+  > {
+    return this.chain(resultName, (scope) => AsyncMaybe.pure(next(scope)));
+  }
+
+  executeTarget<ResultName extends keyof OutputScope>(resultName: ResultName) {
+    return (input: Input) =>
+      AsyncMaybe.bind(this.execute(input), (outputScope) =>
+        AsyncMaybe.pure(outputScope[resultName])
+      );
+  }
+
+  static start<InputScope extends Scope<any>>(): AsyncMaybeChain<
+    InputScope,
+    InputScope
+  > {
+    return new AsyncMaybeChain(AsyncMaybe.pure<InputScope>);
+  }
+}
+
+export const maybeTest = AsyncMaybeChain.start<{ initialInput: string }>()
+  .chain("punctuation", () => AsyncMaybe.pure("!"))
+  .chain("finalGreeting", (scope) =>
+    AsyncMaybe.pure(`Hello ${scope.initialInput}${scope.punctuation}`)
+  ).execute;
+
+export interface MaybeData {
+  getName: (userId: string) => Promise<string | null>;
+  getPunctuation: (name: string) => Promise<string | undefined>;
+}
+
+// Without Chain
+export const before = async ({
+  userId,
+  maybeData,
+}: {
+  userId: string;
+  maybeData: MaybeData;
+}) => {
+  const name = await maybeData.getName(userId);
+  if (name === null) {
+    return null;
+  }
+  const punctuation = await maybeData.getPunctuation(name);
+  if (punctuation === undefined) {
+    return null;
+  }
+  return `Hello ${name}${punctuation}`;
+};
+
+// With Chain
+export const after = AsyncMaybeChain.start<{
+  userId: string;
+  maybeData: MaybeData;
+}>()
+  .chain("name", (s) => s.maybeData.getName(s.userId))
+  .chain("punctuation", (s) => s.maybeData.getPunctuation(s.name))
+  .map("result", (s) => `${s.name}{s.punctuation}`)
+  .executeTarget("result");
+
+export const exhausted = (narrowedType: never) => narrowedType;
+
+export type SolidSuccess<Success> = {
+  kind: "success";
+  value: Success;
+};
+
+export type SolidFailure<Failure> = {
+  kind: "failure";
+  failure: Failure;
+};
+
+export type Solid<Success, Failure, State extends Scope<any>> = (
+  state: Partial<State>
+) => Promise<{
+  state: Partial<State>;
+  result: SolidSuccess<Success> | SolidFailure<Failure>;
+}>;
+
+export const Solid = {
+  pure: <Success, State extends Scope<any>>(
+    value: Success
+  ): Solid<Success, never, State> => {
+    return async (state) => ({ state, result: { kind: "success", value } });
+  },
+  failure: <Failure, State extends Scope<any>>(
+    failure: Failure
+  ): Solid<never, Failure, State> => {
+    return async (state) => ({ state, result: { kind: "failure", failure } });
+  },
+  bind: <Success, NextSuccess, Failure, NextFailure, State extends Scope<any>>(
+    prev: Solid<Success, Failure, State>,
+    func: (success: Success) => Solid<NextSuccess, NextFailure, State>
+  ): Solid<NextSuccess, Failure | NextFailure, State> => {
+    return async (state: Partial<State>) => {
+      const awaitedPrevious = await prev(state);
+      const prevResult = awaitedPrevious.result;
+      if (prevResult.kind === "success") {
+        const next = await func(prevResult.value)(state);
+        return next;
+      } else {
+        return { state, result: prevResult };
+      }
+    };
+  },
+  get: <Failure, State extends Scope<any>>(): Solid<
+    Partial<State>,
+    Failure,
+    State
+  > => {
+    return async (state: Partial<State>) => ({
+      state,
+      result: { kind: "success", value: state },
+    });
+  },
+  modify: <State extends Scope<any>>(
+    func: (prev: Partial<State>) => Partial<State>
+  ): Solid<Partial<State>, never, State> => {
+    return async (state: Partial<State>) => {
+      const newState = func(state);
+      return {
+        state: newState,
+        result: { kind: "success", value: newState },
+      };
+    };
+  },
+  set: <State extends Scope<any>, Key extends keyof State>(
+    key: Key,
+    value: State[Key]
+  ): Solid<void, never, State> => {
+    return Solid.bind(
+      Solid.modify((prev) => ({ ...prev, [key]: value })),
+      () => Solid.pure(undefined)
+    );
+  },
+  noThrow: <Success, Failure, State extends Scope<any>>(
+    solid: Solid<Success, Failure, State>
+  ): Solid<Success, Failure | UnhandledExceptionFailure, State> => {
+    return (state: Partial<State>) => {
+      try {
+        return solid(state);
+      } catch (e) {
+        return Solid.failure({
+          type: "UnhandledException" as const,
+          thrown: e,
+        })(state);
+      }
+    };
+  },
+  map: <Previous, Next, Failure, State extends Scope<any>>(
+    func: (previous: Previous) => Next,
+    prev: Solid<Previous, Failure, State>
+  ) => {
+    return Solid.bind(prev, (success) => Solid.pure(func(success)));
+  },
+  apply: <Success, NextSuccess, Failure, NextFailure, State extends Scope<any>>(
+    funcInMonad: Solid<(prev: Success) => NextSuccess, NextFailure, State>,
+    prev: Solid<Success, Failure, State>
+  ): Solid<NextSuccess, Failure | NextFailure, State> => {
+    return Solid.bind(funcInMonad, (func) => Solid.map(func, prev));
+  },
+  lift2: <
+    Left,
+    Right,
+    Result,
+    LeftFailure,
+    RightFailure,
+    State extends Scope<any>
+  >(
+    operation: (left: Left, right: Right) => Result,
+    left: Solid<Left, LeftFailure, State>,
+    right: Solid<Right, RightFailure, State>
+  ): Solid<Result, LeftFailure | RightFailure, State> => {
+    return Solid.apply(
+      Solid.map((left: Left) => (right: Right) => operation(left, right), left),
+      right
+    );
+  },
+  traverse: <Input, Success, Failure, State extends Scope<any>>(
+    inputs: Input[],
+    func: (input: Input) => Solid<Success, Failure, State>
+  ): Solid<Success[], Failure, State> => {
+    return inputs.reduce<Solid<Success[], Failure, State>>(
+      (acc, next) =>
+        Solid.lift2(
+          (results: Success[], next: Success) => {
+            results.push(next);
+            return results;
+          },
+          acc,
+          func(next)
+        ),
+      Solid.pure([])
+    );
+  },
+};
+
+export type UnhandledExceptionFailure = {
+  type: "UnhandledException";
+  thrown: any;
+};
+
+export class SolidChain<
+  Input,
+  OutputScope extends Scope<any>,
+  Failure,
+  State extends Scope<any>
+> {
+  private readonly operation: (
+    input: Input
+  ) => Solid<OutputScope, Failure, State>;
+  constructor(starter: (input: Input) => Solid<OutputScope, Failure, State>) {
+    this.operation = starter;
+  }
+
+  execute(
+    input: Input
+  ): Solid<OutputScope, Failure | UnhandledExceptionFailure, State> {
+    return Solid.noThrow(this.operation(input));
+  }
+
+  chain<NextOutput, NextFailure, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => Solid<NextOutput, NextFailure, State>
+  ): SolidChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>,
+    Failure | NextFailure,
+    State
+  > {
+    const chainedOperation = (
+      input: Input
+    ): Solid<
+      ExtendedScope<OutputScope, ResultName, NextOutput>,
+      Failure | NextFailure,
+      State
+    > => {
+      const previousResult = this.operation(input);
+      return Solid.bind(previousResult, (output: OutputScope) => {
+        return Solid.bind(next(output), (nextOutput) => {
+          return Solid.pure(extendScope(output, resultName, nextOutput));
+        });
+      });
+    };
+    return new SolidChain(chainedOperation);
+  }
+
+  map<NextOutput, ResultName extends string>(
+    resultName: ResultName,
+    next: (previous: OutputScope) => NextOutput
+  ): SolidChain<
+    Input,
+    ExtendedScope<OutputScope, ResultName, NextOutput>,
+    Failure,
+    State
+  > {
+    return this.chain(resultName, (scope) => Solid.pure(next(scope)));
+  }
+
+  tap<NextFailure>(
+    func: (previous: OutputScope) => Solid<void, NextFailure, State>
+  ): SolidChain<Input, OutputScope, Failure | NextFailure, State> {
+    return new SolidChain((input: Input) =>
+      Solid.bind(this.operation(input), (scope) =>
+        Solid.bind(func(scope), () => Solid.pure(scope))
+      )
+    );
+  }
+
+  executeTarget<ResultName extends keyof OutputScope>(
+    resultName: ResultName
+  ): (
+    input: Input
+  ) => Solid<
+    OutputScope[ResultName],
+    Failure | UnhandledExceptionFailure,
+    State
+  > {
+    return (input: Input) =>
+      Solid.noThrow(
+        Solid.bind(this.execute(input), (outputScope) =>
+          Solid.pure(outputScope[resultName])
+        )
+      );
+  }
+
+  static start<
+    InputScope extends Scope<any>,
+    State extends Partial<Scope<any>>
+  >(): SolidChain<InputScope, InputScope, never, State> {
+    return new SolidChain(Solid.pure<InputScope, State>);
+  }
+}
+
+type HttpRequest = {};
+type User = {};
+type Organization = {};
+type Command = {};
+type Events = {};
+type LaxMessage = {};
+
+type LaxContext = {
+  laxUserId: string;
+  laxOrganizationId: string;
+  laxResponseUrl: URL;
+  actionPayload: any;
+};
+
+export interface LaxOperations {
+  checkSignature: <State extends Scope<any>>(scope: {
+    httpRequest: HttpRequest;
+  }) => Solid<
+    "laxSignatureOk",
+    { type: "InvalidLaxSignature"; message: string },
+    State
+  >;
+  parseRequest: <State extends { laxContext: LaxContext }>(scope: {
+    laxSignatureCheck: "laxSignatureOk";
+  }) => Solid<
+    LaxContext,
+    { type: "UnableToParseLaxContext"; message: string },
+    State
+  >;
+  reply: <State extends { laxContext: LaxContext }>(scope: {
+    laxContext: LaxContext;
+    reply: LaxMessage;
+  }) => Solid<
+    void,
+    { type: "CouldNotContactLax" | "LaxRefusedReply"; message: string },
+    State
+  >;
+  findUserAndOrganization: <State extends Scope<any>>(scope: {
+    laxContext: LaxContext;
+  }) => Solid<
+    { user: User; organization: Organization },
+    { type: "OrganizationNotFound" | "UserNotFound"; message: string },
+    State
+  >;
+}
+
+export interface Commands {
+  parseUntrustedCommand: <State extends Scope<any>>(scope: {
+    untrustedCommand: any;
+  }) => Solid<Command, { type: "UnrecognizedCommand"; message: string }, State>;
+  executeCommand: <State extends Scope<any>>(args: {
+    userInfo: { user: User; organization: Organization };
+    command: Command;
+  }) => Solid<
+    Events,
+    { type: "NotPermitted" | "ValidationFailed"; message: string },
+    State
+  >;
+}
+
+export interface TheseWouldBeLocalFunctions {
+  createSuccessResponse: (scope: {
+    command: Command;
+    userInfo: { user: User; organization: Organization };
+    eventsCaused: Events;
+  }) => LaxMessage;
+}
+
+export type LaxCallBackState = {
+  laxContext: LaxContext;
+  user: User;
+  organization: Organization;
+};
+
+export type LaxCallbackDependencies = {
+  laxOperations: LaxOperations;
+  commands: Commands;
+  localFunctions: TheseWouldBeLocalFunctions;
+};
+
+export const processLaxCallback = ({
+  laxOperations,
+  commands,
+  localFunctions,
+}: LaxCallbackDependencies) =>
+  SolidChain.start<{ httpRequest: HttpRequest }, LaxCallBackState>()
+    .chain("laxSignatureCheck", laxOperations.checkSignature)
+    .chain("laxContext", laxOperations.parseRequest)
+    .tap(({ laxContext }) => Solid.set("laxContext", laxContext))
+    .chain("command", ({ laxContext }) =>
+      commands.parseUntrustedCommand({
+        untrustedCommand: laxContext.actionPayload,
+      })
+    )
+    .chain("userInfo", laxOperations.findUserAndOrganization)
+    .tap(({ userInfo }) => Solid.set("user", userInfo.user))
+    .tap(({ userInfo }) => Solid.set("organization", userInfo.organization))
+    .chain("eventsCaused", commands.executeCommand)
+    .map("reply", localFunctions.createSuccessResponse)
+    .tap(laxOperations.reply)
+    .executeTarget("eventsCaused");
+
+export const laxCallbackHandler =
+  (deps: LaxCallbackDependencies) => async (httpRequest: HttpRequest) => {
+    const processResult = await processLaxCallback(deps)({ httpRequest })({});
+
+    if (processResult.result.kind === "success") {
+      console.log("Woot! Created events: ", processResult.result.value);
+    } else {
+      // Error handling
+      const reportError = async (message: string) => {
+        console.log(
+          "Always report errors internally with full info including stack trace for unhandled exceptions",
+          processResult
+        );
+        if (processResult.state.laxContext) {
+          // We have enough info to tell the user something went wrong.
+          // In theory we could check if this operation failed, but
+          // we also can't do anything about it so :shrug:
+          await deps.laxOperations.reply({
+            laxContext: processResult.state.laxContext,
+            reply: message as any as LaxMessage, // Let's pretend :)
+          })({});
+        }
+      };
+      switch (processResult.result.failure.type) {
+        case "NotPermitted":
+          await reportError("You can't do that");
+          break;
+        case "ValidationFailed":
+          await reportError("You sent the wrong information");
+          break;
+        case "UnrecognizedCommand":
+          await reportError(
+            "Something is wrong with the message we sent you, sorry!"
+          );
+          break;
+        case "OrganizationNotFound":
+        case "UserNotFound":
+          await reportError("You don't seem to be fully set up on Lax yet");
+          break;
+        case "UnableToParseLaxContext":
+        case "InvalidLaxSignature":
+          await reportError("Invalid callback");
+          break;
+        case "CouldNotContactLax":
+          await reportError(
+            "We tried to send you a message, but something went wrong at Lax's end."
+          );
+          break;
+        case "LaxRefusedReply":
+          await reportError(
+            "We tried to send you a message but something went wrong on our end."
+          );
+          break;
+        case "UnhandledException":
+          await reportError(
+            "Something went wrong, our support staff will look into it"
+          );
+          break;
+        default:
+          return exhausted(processResult.result.failure);
+      }
+    }
+  };
+
+export const traverseExample =
+  (commandOperations: Commands) => (untrustedInput: any[]) =>
+    SolidChain.start<
+      {
+        untrustedInput: any[];
+        userInfo: { user: User; organization: Organization };
+      },
+      {}
+    >()
+      .chain("parsedCommands", ({ untrustedInput }) =>
+        Solid.traverse(untrustedInput, commandOperations.parseUntrustedCommand)
+      )
+      .chain("resultingEvents", ({ parsedCommands, userInfo }) =>
+        Solid.traverse(parsedCommands, (command) =>
+          commandOperations.executeCommand({ command, userInfo })
+        )
+      )
+      .executeTarget("resultingEvents");
+
+const expandingErrors =
+  (commandOperations: Commands) =>
+  (untrustedInput: any, userInfo: { user: User; organization: Organization }) =>
+    Solid.bind(
+      commandOperations.parseUntrustedCommand({
+        untrustedCommand: untrustedInput,
+      }),
+      (command) => commandOperations.executeCommand({ command, userInfo })
+    );
+#+end_src
+@@html:</div></details>@@
+
+** Appendix 3: license
+
+All the code (and only the code) in this blog post is licensed with the MIT license below:
+
+#+begin_quote
+Copyright 2024 Michael Newton
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#+end_quote

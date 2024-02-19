@@ -4,13 +4,13 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/02/19/do-notation-for-typescript.html
 :PUBDATE: 2024-02-19
-:ID:       47EC6E0A-88F2-4453-9080-92A8417DBE19
+:ID:       B4438728-AAC3-4510-AFEB-590ED7C2EB77
 :END:
 This is rather an aside from recent blog posts, but something I found interesting none the less.
 
 Fair warning to start us off: this post assumes that you are aware of and understand "do notation" (or "computational expressions" or "monad syntax") and like the idea of having it available in TypeScript.
 
-It starts by working through a possible way of implementing a type safe representation of a sequence of monadic operations that has a much nicer user experience than nested continuation functions, and then leads into a length example of both building and showing how to use a monad which I've found very useful when working in TypeScript for handling asynchronous code that needs to meaningfully respond to both successes and failures.
+It starts by working through a possible way of implementing a type safe representation of a sequence of monadic operations that has a much nicer user experience than nested continuation functions, and then leads into a lengthy example of both building and showing how to use a monad which I've found very useful when working in TypeScript for handling asynchronous code that needs to meaningfully respond to both successes and failures.
 
 The idea is that we're going to go from code that looks like this:
 
@@ -58,7 +58,7 @@ For the avoidance of any doubt, all the code in this blog post is available for 
 
 ** The idea
 :PROPERTIES:
-:ID:       D5F2E2D6-ED4C-4433-B423-CA154BC6EC22
+:ID:       65394E00-4030-442C-BC6E-5E739F6CDBC6
 :END:
 
 TypeScript has one form of monad notation already - the ~await~ keyword. Unfortunately, there isn't any way to plug into the mechanism used and define your own alternative ~bind~ implementation without doing something dangerously hacky. And, frankly, the last thing your TypeScript code needs is an other sharp edge to cut yourself on.
@@ -69,7 +69,7 @@ So: if we consider the fact that a scope is really just a mapping from names to 
 
 ** Defining a scope
 :PROPERTIES:
-:ID:       24A4229A-D1E1-42BD-89C6-55EB5E271B09
+:ID:       C9D6D24A-588B-480E-B9C0-9205355CAA20
 :END:
 
 A type that maps names to values is reasonably easy to define in TypeScript. It looks something like this:

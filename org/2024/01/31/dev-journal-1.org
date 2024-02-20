@@ -62,6 +62,10 @@ A nix "flake" is a declarative description of a set of packages we'd like to be 
           # on the dotnet runtime
           selfContainedBuild = true;
 
+          # This is a webserver, and it complains if it
+          # has no access to openssl
+          runtimeDeps = [ pkgs.openssl pkgs.cacert ];
+
           dotnet-sdk = dnc.sdk_8_0;
           dotnet-runtime = dnc.runtime_8_0;
           executables = [ "CalDance" ];
@@ -72,8 +76,15 @@ A nix "flake" is a declarative description of a set of packages we'd like to be 
         packages.dockerImage = pkgs.dockerTools.buildImage {
           name = name;
           config = {
-            Cmd = [ "${packages.default}/bin/CalDance" ];
-            Env = [ "DOTNET_EnableDiagnostics=0" ];
+            # asp.net likes a writable /tmp directory
+            Cmd = pkgs.writeShellScript "runServer" ''
+              ${pkgs.coreutils}/bin/mkdir -p /tmp
+              ${pkgs.coreutils}/bin/mount -t tmpfs tmp /tmp
+              ${packages.default}/bin/CalDance.Server
+            '';
+            Env =
+              [ "DOTNET_EnableDiagnostics=0" "ASPNETCORE_URLS=http://+:5001" ];
+            ExposedPorts = { "5001/tcp" = { }; };
           };
         };
 #+END_SRC

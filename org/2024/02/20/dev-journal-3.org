@@ -1,0 +1,61 @@
+#+TITLE: Does it run? Dev Journal 3
+
+A short update this time. [[https://gitlab.com/mavnn/caldance/-/issues/3][Gregg Bremer]] (hi Gregg!) pointed out that running ~nix run~ on his linux machine resulted in an error about not being able to find ~libssl~.
+
+This neatly highlights one of the weak spots of Nix; while an excellent packaging solution, it isn't perfect. Nix sandboxes your packages by altering the path environment variable, but not everything is located via that mechanism.
+
+In this case, ~nix run~ ran on my machine because I happened to have the libraries in the "right place" for a self contained dotnet core executable, but Gregg did not.
+
+Neither, it turns out, did the docker container I was building. I built and tested it initially with a dotnet console app (which did work, not needing ~libssl~) and then carried on assuming that running ~nix run~ on my local machine would also tell me if the docker image could run correctly.
+
+I've now fixed up the code in the previous posts (we needed to add some ~runtimeDeps~ to our server package, and the docker image start up command needs to create a writable ~/tmp~ directory for asp.net to run correctly).
+
+Most importantly though, I've also made sure that CI will prevent this from happening again by actually checking that the docker image produced can respond to a request to the index with a 200 response code. This is done by adding "stages" to our CI build; the first does exactly what we were doing already, the second then starts the just finished docker image as a "service" and uses ~curl~ to check it can respond to us.
+
+You can check out the revised ~.gitlab-ci.yml~ file below:
+
+#+begin_src yaml
+stages:
+  - build-container
+  - end-to-end-tests
+
+build-container:
+  stage: build-container
+  image:
+    name: "nixos/nix:2.19.3"
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  before_script:
+    - nix-env --install --attr nixpkgs.skopeo
+  script:
+    - mkdir -p "$HOME/.config/nix"
+    - echo 'experimental-features = nix-command flakes' > "$HOME/.config/nix/nix.conf"
+    - mkdir -p "/etc/containers/"
+    - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
+    - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - 'nix build .#dockerImage .#test'
+    - mkdir testResults
+    - 'cp result-1/* testResults'
+    - ls -lh ./result
+    - 'skopeo inspect docker-archive://$(readlink -f ./result)'
+    - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
+  artifacts:
+    when: always
+    paths:
+      - 'testResults/*.xml'
+    reports:
+      junit: 'testResults/*.xml'
+
+end-to-end-tests:
+  stage: end-to-end-tests
+  image:
+    name: "nixos/nix:2.19.3"
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    GIT_STRATEGY: none
+  services:
+    - name: $IMAGE_TAG
+      alias: caldance
+  script:
+    - curl -f "http://caldance:5001/"
+#+end_src

@@ -1,4 +1,5 @@
 #+INCLUDE: ./blurb.inc.org
+- [[file:./2024/02/20/dev-journal-3.org][Does it run? Dev Journal 3]] (2024-02-20)
 - [[file:./2024/02/19/do-notation-for-typescript.org][Do notation for TypeScript]] (2024-02-19)
 - [[file:./2024/02/06/dev-journal-2.org][Scaffolding: Dev Journal 2]] (2024-02-06)
 - [[file:./2024/01/31/dev-journal-1.org][Foundations: Dev Journal 1]] (2024-01-31)

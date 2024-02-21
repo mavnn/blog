@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/02/20/dev-journal-3.html
 :PUBDATE: 2024-02-20
-:ID:       4E939735-3F0F-4DFC-BEA4-A4E5F97671F2
+:ID:       23D2F129-9863-4435-99C2-F56FBD6EA5DB
 :END:
 #+begin_quote
 This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal3?ref_type=tags][DevJournal3]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -73,7 +73,7 @@ You can check out the revised ~.gitlab-ci.yml~ file below:
 :PROPERTIES:
 :RSS_PERMALINK: 2024/02/19/do-notation-for-typescript.html
 :PUBDATE: 2024-02-19
-:ID:       61C82EA5-A624-46AD-93D3-72A66FD81045
+:ID:       9EF04F1A-3348-443C-9C40-0C899D427FA3
 :END:
 This is rather an aside from recent blog posts, but something I found interesting none the less.
 
@@ -121,13 +121,13 @@ The idea is that we're going to go from code that looks like this:
       // ...continued
 #+end_src
 
-If you're impatient you can jump straight to [[Appendix 2: A slightly excessive example of the Solid monad in action][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
+If you're impatient you can jump straight to [[id:8B8152C2-E896-4933-A30E-E01276B284A8][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
 
-For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[*Appendix 3: license][appendix 3]].
+For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[id:E8C7C73E-C564-4CDE-B2D9-328AFDF256F1][appendix 3]].
 
 ** The idea
 :PROPERTIES:
-:ID:       7D80BAED-37FD-4F17-8F66-005231A6A72E
+:ID:       09FC8802-6845-40BD-BA7D-C6D3BD665123
 :END:
 
 TypeScript has one form of monad notation already - the ~await~ keyword. Unfortunately, there isn't any way to plug into the mechanism used and define your own alternative ~bind~ implementation without doing something dangerously hacky. And, frankly, the last thing your TypeScript code needs is an other sharp edge to cut yourself on.
@@ -138,7 +138,7 @@ So: if we consider the fact that a scope is really just a mapping from names to 
 
 ** Defining a scope
 :PROPERTIES:
-:ID:       1D8735FB-2D58-4A6F-879B-ED389015D25F
+:ID:       F34ED86F-1A40-4966-B462-C361271EB3E0
 :END:
 
 A type that maps names to values is reasonably easy to define in TypeScript. It looks something like this:

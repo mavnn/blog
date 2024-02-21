@@ -47,9 +47,9 @@ The idea is that we're going to go from code that looks like this:
       // ...continued
 #+end_src
 
-If you're impatient you can jump straight to [[*Appendix 2: A slightly excessive example of the Solid monad in action][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
+If you're impatient you can jump straight to [[id:8B8152C2-E896-4933-A30E-E01276B284A8][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
 
-For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[*Appendix 3: license][appendix 3]].
+For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[id:E8C7C73E-C564-4CDE-B2D9-328AFDF256F1][appendix 3]].
 
 ** The idea
 
@@ -1048,6 +1048,9 @@ export const traverseExample =
 Warning: there's an argument for not adding too many of these helpers too quickly or to not make all of the intermediate abstractions publicly available. Developers new to functional programming will quickly see the point of a method like ~traverse~ when shown an example, but finding something like ~lift2~ is going to leave a lot of people scratching their heads.
 
 ** Appendix 2: A slightly excessive example of the Solid monad in action
+:PROPERTIES:
+:ID:       8B8152C2-E896-4933-A30E-E01276B284A8
+:END:
 
 @@html:<details><summary>@@
 You can cut and paste this big fat code block into the TS editor of your choice and have a play with the Solid monad. Go on. It's fun!
@@ -1635,6 +1638,9 @@ const expandingErrors =
 @@html:</div></details>@@
 
 ** Appendix 3: license
+:PROPERTIES:
+:ID:       E8C7C73E-C564-4CDE-B2D9-328AFDF256F1
+:END:
 
 All the code (and only the code) in this blog post is licensed with the MIT license below:
 

@@ -167,3 +167,7 @@ As a bonus extra, anybody with nix installed can build and run the project witho
 *** Feedback? Comments?
 
 Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
+
+*** Next
+
+[[../../../2024/02/06/dev-journal-2.org][Part 2]] adds unit tests and consistent formatting to the project.

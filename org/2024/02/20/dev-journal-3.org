@@ -1,5 +1,9 @@
 #+TITLE: Does it run? Dev Journal 3
 
+#+BEGIN_QUOTE
+This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal3?ref_type=tags][DevJournal3]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+END_QUOTE
+
 A short update this time. [[https://gitlab.com/mavnn/caldance/-/issues/3][Gregg Bremer]] (hi Gregg!) pointed out that running ~nix run~ on his linux machine resulted in an error about not being able to find ~libssl~.
 
 This neatly highlights one of the weak spots of Nix; while an excellent packaging solution, it isn't perfect. Nix sandboxes your packages by altering the path environment variable, but not everything is located via that mechanism.

@@ -257,6 +257,10 @@ If you'd like to see the next post focusing on testing the code we already have,
 
 If you'd like to see the next post starting to actually hook up a form and a data store, hit the thumbs up on [[https://gitlab.com/mavnn/caldance/-/issues/2][this issue instead]]!
 
+** Next
+
+[[../../../2024/02/20/dev-journal-3.org][Part 3]] continues with an end to end test of our docker container.
+
 * Footnotes
 
 [fn:1] Bike shedding is the original example used in the [[https://en.wikipedia.org/wiki/Law_of_triviality][law of triviality]] as stated by C. Northcote Parkinson: "The time spent on any item of the agenda will be in inverse proportion to the sum [of money] involved." It's often used as short hand to refer to the fact that trivial matters which are easy to understand and have an opinion on will tend to create enormously more discussion and hesitation than complex problems where solving the problem even once, let alone thinking of alternative solutions, is a serious effort.

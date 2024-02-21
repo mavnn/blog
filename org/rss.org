@@ -4,8 +4,12 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/02/20/dev-journal-3.html
 :PUBDATE: 2024-02-20
-:ID:       36786B8D-80D2-45F3-8016-4D34B635ADC2
+:ID:       4E939735-3F0F-4DFC-BEA4-A4E5F97671F2
 :END:
+#+begin_quote
+This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal3?ref_type=tags][DevJournal3]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+end_quote
+
 A short update this time. [[https://gitlab.com/mavnn/caldance/-/issues/3][Gregg Bremer]] (hi Gregg!) pointed out that running ~nix run~ on his linux machine resulted in an error about not being able to find ~libssl~.
 
 This neatly highlights one of the weak spots of Nix; while an excellent packaging solution, it isn't perfect. Nix sandboxes your packages by altering the path environment variable, but not everything is located via that mechanism.
@@ -69,7 +73,7 @@ You can check out the revised ~.gitlab-ci.yml~ file below:
 :PROPERTIES:
 :RSS_PERMALINK: 2024/02/19/do-notation-for-typescript.html
 :PUBDATE: 2024-02-19
-:ID:       69B6AD82-CFE2-448F-83DF-BAD207F21E4C
+:ID:       61C82EA5-A624-46AD-93D3-72A66FD81045
 :END:
 This is rather an aside from recent blog posts, but something I found interesting none the less.
 
@@ -117,13 +121,13 @@ The idea is that we're going to go from code that looks like this:
       // ...continued
 #+end_src
 
-If you're impatient you can jump straight to [[*Appendix 2: A slightly excessive example of the Solid monad in action][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
+If you're impatient you can jump straight to [[Appendix 2: A slightly excessive example of the Solid monad in action][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
 
 For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[*Appendix 3: license][appendix 3]].
 
 ** The idea
 :PROPERTIES:
-:ID:       7E239CF7-FC69-4900-A7E4-2DB073788832
+:ID:       7D80BAED-37FD-4F17-8F66-005231A6A72E
 :END:
 
 TypeScript has one form of monad notation already - the ~await~ keyword. Unfortunately, there isn't any way to plug into the mechanism used and define your own alternative ~bind~ implementation without doing something dangerously hacky. And, frankly, the last thing your TypeScript code needs is an other sharp edge to cut yourself on.
@@ -134,7 +138,7 @@ So: if we consider the fact that a scope is really just a mapping from names to 
 
 ** Defining a scope
 :PROPERTIES:
-:ID:       0B7F5AA0-2954-4EF9-9B40-DFFF14795110
+:ID:       1D8735FB-2D58-4A6F-879B-ED389015D25F
 :END:
 
 A type that maps names to values is reasonably easy to define in TypeScript. It looks something like this:

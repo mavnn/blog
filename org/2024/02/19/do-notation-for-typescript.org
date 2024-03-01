@@ -751,10 +751,10 @@ export const Solid = {
       const awaitedPrevious = await prev(state);
       const prevResult = awaitedPrevious.result;
       if (prevResult.kind === "success") {
-        const next = await func(prevResult.value)(state);
+        const next = await func(prevResult.value)(prevResult.state);
         return next;
       } else {
-        return { state, result: prevResult };
+        return { state: prevResult.state, result: prevResult };
       }
     };
   }
@@ -1244,10 +1244,10 @@ export const Solid = {
       const awaitedPrevious = await prev(state);
       const prevResult = awaitedPrevious.result;
       if (prevResult.kind === "success") {
-        const next = await func(prevResult.value)(state);
+        const next = await func(prevResult.value)(prevResult.state);
         return next;
       } else {
-        return { state, result: prevResult };
+        return { state: prevResult.state, result: prevResult };
       }
     };
   },

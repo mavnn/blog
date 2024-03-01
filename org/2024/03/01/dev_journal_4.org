@@ -1,0 +1,164 @@
+#+TITLE: Log in, log out
+
+#+BEGIN_QUOTE
+This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+END_QUOTE
+
+This is the big one: we have our first piece of event sourcing, and a bunch of infrastructure to get us there. So big, in fact, that I'm going to split the post into two and publish the remainder early next week.
+
+A lot has changed, and I'm not going to go into every single detail so if you're following along by hand I made a pull request for the changes added here so that you can [[https://gitlab.com/mavnn/caldance/-/merge_requests/2/diffs][see them all in one place]].
+
+** Nix pulling its weight
+
+We're about to add a database to our project, and this is an area where Nix really shines.
+
+Adding services with pinned versions of dependencies to are development environment is as simple as adding them to the list in ~flake.nix~:
+
+#+begin_src nix
+  devShells.default = pkgs.mkShell {
+    buildInputs = [
+      dnc.sdk_8_0
+      pkgs.nixfmt
+      pkgs.skopeo
+      pkgs.overmind
+      pkgs.tmux
+      pkgs.postgresql
+      fantomas
+      format-all
+      format-stdin
+      local_postgres
+    ];
+  };
+#+end_src
+
+The only clever thing we're doing here is also adding a ~local_postgres~ command which runs postgres with its data directory set to be a git ignored directory in the repository. This means that a simple git clean will reset the database along with everything else.
+
+As a courtesy to developers who may work on code that isn't CalDance, we also set a non-standard port for postgres to use in our ~.envrc~ file so that we don't compete with any system wide installations that may already be running.
+
+Overmind is a process runner that runs processes as defined in a ~Procfile~, so we add one to the root of the project with the following:
+
+#+begin_src procfile
+server: dotnet watch --project Server/CalDance.Server.fsproj
+postgres: local_postgres
+#+end_src
+
+Now we can run ~overmind s~ to start both postgres and a dotnet watcher to live recompile our server code as it changes.
+
+** Adding some nuget dependencies
+
+We're adding dependencies to our server of [[https://martendb.io/][Marten]] (document/event database library that sits on top of postgres) and [[https://serilog.net/][Serilog]] (a nice structured log library).
+
+Marten depends on a postgres library with native (i.e. non-dotnet) dlls, so to allow Nix to cache and link to the correct versions of the native code we have to specify which runtimes we expect to be building our code for. For the curious minded, you don't need to do this to be able to run ~dotnet build~ directly because the ~dotnet~ cli will dynamically download and add the required native libraries - which breaks Nix's caching strategy of a reproducible output from a fixed set of input files.
+
+This isn't a huge issue once you know you need to do it; you just add a ~RuntimeIdentifiers~ node to your project files under the ~TargetFramework~ node like so:
+
+#+begin_src xml
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RuntimeIdentifiers>osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+#+end_src
+
+Then we can add our nuget packages as normal and everything continues to work:
+
+#+begin_src xml
+  <ItemGroup>
+    <PackageReference Include="Falco" Version="4.0.6" />
+    <PackageReference Include="Marten" Version="6.4.1" />
+    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+  </ItemGroup>
+#+end_src
+
+** Opinionated endpoint builders
+
+In general, the code to handle an endpoint in an AspNet.Core application is a function from ~HttpContext~ to ~Task~, where we mutate the HTTP context and then write the correct output stream.
+
+Falco gives us an abstraction a little higher than that by giving us a set of composable functions for manipulating the HTTP context, which is already a step forward. But I was finding them harder to compose than I would like because in several cases the functions took two inputs and effectively "branched" the response that could be given - for example, do I have the form fields I expect in this POST request, or am I logged in.
+
+I quickly realized that I'd be happier with some kind of "result" mechanism - a way to be able to declare during the specification of a handler that I wanted to short circuit from this point onwards with a failure response.
+
+I also knew that I wanted a type safe way of writing handlers for paths with "place holder" sections.
+
+Because of that, I added a ~Routing~ in which I've defined a ~Handler~ type as below:
+
+#+begin_src fsharp
+type Handler<'a> =
+  HttpContext -> Task<HttpContext * Result<'a, HttpHandler>>
+#+end_src
+
+For the sharp eyed among you with functional programming experience you may have spotted this is the same shape as the data type of a stateful either monad, and indeed we also define a computational expression called ~handler~ that allows us to now write our handlers in a more declarative style.
+
+The revised ~indexEndpoint~ in the main program file gives a good example of what it looks like:
+
+#+begin_src fsharp
+let indexRoute = literalSection "/"
+
+let indexEndpoint =
+  Handler.toEndpoint get indexRoute (fun () ->
+    handler {
+      let! user = User.getSessionUser
+
+      return
+        (Response.ofHtml (
+          Elem.html
+            []
+            [ Elem.body
+                []
+                [ Elem.h1
+                    []
+                    [ match user with
+                      | Some u ->
+                        Text.raw $"Hi {u.username}!"
+                      | None ->
+                        Text.raw "You should go log in!" ]
+                  Elem.p
+                    []
+                    [ Text.raw "Would you like to "
+                      Elem.a
+                        [ Attr.href (
+                            greetingRoute.link "Bob"
+                          ) ]
+                        [ Text.raw "greet Bob?" ] ] ] ]
+        ))
+    })
+#+end_src
+
+Note the ~let!~ on the first line where we pull the user session out of the HTTP context which the computational expression is "invisibly" carrying along for us.
+
+** Connecting up the database
+
+Having defined our handler type, it makes sense to make the rest of our tooling easy to use from within the abstraction.
+
+The new ~Marten~ module contains some boiler plate to configure Marten and add Serilog logging to it, but most importantly it also adds:
+
+#+begin_src fsharp
+let withMarten f =
+  Handler.fromCtx (fun ctx ->
+    ctx.GetService<IDocumentSession>())
+  |> Handler.bind (f >> Handler.returnTask)
+
+// Marten returns null if a record isn't found, but
+// F# records declare they can't be null. This works
+// around that to return an option instead
+let returnOption v =
+  if (v |> box |> isNull) then None else Some v
+#+end_src
+
+Now from within any HTTP handler we're writing, we can write code like:
+
+#+begin_src fsharp
+    let! user =
+      Marten.withMarten (fun marten ->
+        marten.LoadAsync<UserRecord>(id))
+#+end_src
+
+...and as if by magic the request specific Marten session will be pulled out of the HTTP context of the request and we can use it to connect to our data source.
+
+** To be continued...
+
+I think that's about enough for this blog post, because I want to leave a whole post for the real meat of this set of changes: our first domain entity, the ~User~.
+
+If you want a sneak peak, you can check out the PR and see how we can define a neat vertical slice of responsibility in our code base. The module takes the responsibility for user management all the way from the domain object, the events that can happen to it, the Marten config to make sure those are tracked, through to the paths that it has responsibility for and the UI that will be displayed when they are requested. Lots of fun stuff for us to talk about in the next exciting installment of "Dev Journal": different time, multiple channels, next week.

@@ -1,0 +1,318 @@
+#+TITLE: Log in, log out: Dev Journal 4 (part 2)
+
+#+BEGIN_QUOTE
+This post is the second half of a two part update in the "Dev Journal" series. [[file:../../../2024/03/01/dev_journal_4.org][The first half]] talks about adding dependencies to the project on postgresql and the Marten event store library, which we'll look at using in this post. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+END_QUOTE
+
+So. We have an event store. Our website is going to have users. How do we go about user management?
+
+** Where's the cheese?
+
+To borrow a term from domain driven design, this sounds like a "bounded context" within our system. Other parts of the code may care about certain events happening related to users (users being created, that kind of thing), but they probably shouldn't know or care about how the internals of "a user" work or what it takes to authenticate a user.
+
+There are as many ways of organizing your code as there are grains of sand on the beach, but fundamentally all of the ones that help are about choosing where to have boundaries in your code base.
+
+We are going to have three horizontal slices; shared library code, domain logic (our "business" code), and execution environment. Vertically we're going to slice the domain logic by bounded context - of which, admittedly, we only have one at the moment.
+
+We end up with something like (things further down the table depend on the things above):
+
++--------------------------------------------------+
+| Http Handler abstraction, UI components          |
++-------------------+------------------------------+
+| User domain logic | Things users do domain logic |
++-------------------+------------------------------+
+| Read configuration files, start the web server   |
++--------------------------------------------------+
+
+You'll notice that this doesn't group the code by the technical task the code is trying to achieve, a pattern you'll often find in example project templates where you'll end up with a "Controllers" directory and a "Views" directory. It's also not an organization along "clean/hexagon/ports and adapters" lines with a strict demarcation between code that speaks to the outside world achieved via interfaces and abstractions.
+
+It's not that I feel that either of those patterns has no merit (although I feel like the main driver of the first pattern is that you can suggest it even for projects you /know nothing about/ which is a useful property when writing templates and dispensing nuggets of wisdom at conferences about the *one true way* to organize code). But I do feel that for the vast majority of code bases, it is a far bigger gain to productivity to be able to co-locate code by /purpose/ than by /type/.
+
+Let's face it: while you sometimes pick up a story/card/work ticket that requires you to go and change all the controllers (normally during dependency upgrades), or replace all the database interface implementations (you're about to have a long few months), it is much more likely on a day to day basis that you're trying to add a new field to the data we store about users, and you want to update the data store, business logic, and UI of /users/ to be able to do that. Taking this logic to its logical extremes leads you towards microservices - but that starts to bring in a different type of complexity of its own.
+
+All of this to say: there's now a folder called ~Domain~ which holds our new, shiny, user management code in a file called: /drumroll, please/ ~User.fs~. Let's have a look at it in detail.
+
+** The cheese. We have found it.
+
+#+begin_src fsharp
+module Mavnn.CalDance.Domain.User
+
+open Falco
+open Falco.Routing
+open Falco.Markup
+open Falco.Security
+open Marten
+open Marten.Events.Aggregation
+open Marten.Events.Projections
+open Mavnn.CalDance
+open Mavnn.CalDance.Routing
+open System.Security.Claims
+open Microsoft.AspNetCore.Identity
+#+end_src
+
+As just mentioned, this module is going to be responsible of the whole vertical slice of the application for user management, so we start by including everything we need from the data store (~Marten~) through to the UI (~Falco.Markup~). We could have created sub modules within a Users folder if needed, but the module is only ~300 lines long so I haven't split it up (yet).
+
+#+begin_src fsharp
+type User = { id: System.Guid; username: string }
+
+type UserState =
+  | Active
+  | Disabled
+
+[<CLIMutable>]
+type UserRecord =
+  { Id: System.Guid
+    Username: string
+    PasswordHash: string
+    State: UserState }
+
+type UserEvent =
+  | Created of UserRecord
+  | PasswordChanged of passwordHash: string
+  | Disabled
+#+end_src
+
+Next we define a few data types that represent our users, and the events that can happen to them over time. This is important because we are "event sourcing" the state of our users, meaning that the golden source of truth for what state a user is in is defined by what events have happened to them so far. The two representations of the user represent what we care about in the running system (the main ~User~ type) and what we need to store about them on disk (the ~UserRecord~ type); in general we would expect that other modules /might/ make use of the ~User~ type but in general they should not make use of the ~UserRecord~ type. Its an open question in my mind whether it should actually be marked as a private type declaration, but I've erred on the side of leaving it available for now.
+
+A minor implementation detail: to try and keep the incremental steps of the project manageable I'm using the default (de)serializers for Marten, which require the object to be deserialized from the data base has a default constructor and mutable fields, which we get from the ~[<CLIMutable>]~ attribute. We'll probably remove that going forwards by switching to a serialization strategy that works with immutable F# records.
+
+The life cycle of our users is very simple at the moment; a ~Created~ event signals that a new, active, user was created. That user can change their password, or they can be marked disabled which effectively ends the lifecycle of the user. There's no way to reactivate a user now, although we could always add one later.
+
+#+begin_src fsharp
+type UserRecordProjection() =
+  inherit SingleStreamProjection<UserRecord>()
+
+  member _.Create(userEvent, metadata: Events.IEvent) =
+    match userEvent with
+    | Created user -> user
+    | _ ->
+      // We should always receive a created event
+      // first so this shouldn't ever happen...
+      // ...but it might, and we don't want to throw
+      // in projections.
+      { Id = metadata.Id
+        Username = ""
+        PasswordHash = ""
+        State = UserState.Disabled }
+
+
+  member _.Apply(userEvent, userRecord: UserRecord) =
+    task {
+
+      match userEvent with
+      | Created _ ->
+        // Should never occur after the first event in the stream
+        // so we ignore duplicates
+        return userRecord
+      | PasswordChanged passwordHash ->
+        match userRecord with
+        | { State = UserState.Disabled } ->
+          // Don't update password of disabled users
+          return userRecord
+        | user ->
+          return
+            { user with
+                PasswordHash = passwordHash }
+      | Disabled ->
+        match userRecord with
+        | { State = UserState.Disabled } ->
+          return userRecord
+        | { State = Active } ->
+          return
+            { userRecord with
+                State = UserState.Disabled }
+    }
+#+end_src
+
+~Marten~ leans heavily into the code reflection capabilities of the dotnet framework, allowing us to configure our data store in terms of the in program types we want it to store. A "projection" in event sourcing is the logic which takes a list of events (our base line source of truth) and turns it into a current state, so this class defines a projection that will create and/or update ~UserRecord~ data in Marten's document store (we know it does this because it implements the ~SingleStreamProjection<UserRecord>~ interface). It will project /from/ events of the ~UserEvent~ type, because that is the type of the first argument of the ~Create~ and ~Apply~ methods we have supplied.
+
+There are a few conventions we need to follow here to allow for this minimalist a configuration. Our current state type /must/ have an ~Id~ (or ~id~) field of type string, uuid, or integer. And when an event matching the signature of our projection is pushed to a stream with an ID, the resulting update to the current status type must produce a document with the same ID as the stream ID.
+
+We're treating our records as immutable objects (because we're planning to make them immutable going forward), so our create and apply methods return a ~Task<UserRecord>~; if the document type was mutable we would also have the options of mutating it in place and returning void.
+
+With that explanation out of the way, hopefully the state machine that represents our user life cycle is clear in the code above.
+
+Now that we can store information about our users, and update them based on what is happening to them, it's time to start implementing the actual responsibilities of the module. We're keeping things minimal to get started, so we'll implement only the three things we /really/ need: sign up, log in, and log out.
+
+#+begin_src fsharp
+type LoginFormData = { username: string; password: string }
+
+let findUserRecord (username: string) =
+  Marten.withMarten (fun marten ->
+    marten
+      .Query<UserRecord>()
+      .SingleOrDefaultAsync(fun ur ->
+        ur.Username = username))
+  |> Handler.map Marten.returnOption
+
+let loginRoute = RouteDef.literalSection "/login"
+let logoutRoute = RouteDef.literalSection "/logout"
+let signupRoute = RouteDef.literalSection "/signup"
+
+let getSessionUser: Handler<User option> =
+  Handler.fromCtx (fun ctx ->
+    match ctx.User with
+    | null -> None
+    | principal ->
+      match
+        (System.Guid.TryParse(
+          principal.FindFirstValue("userId")
+         ),
+         principal.FindFirstValue("name"))
+      with
+      | ((false, _), _)
+      | (_, null) -> None
+      | ((true, id), username) ->
+        Some { id = id; username = username })
+#+end_src
+
+A few definitions and helpers start us off; what data a form needs to capture for someone to sign up/log on, what urls exist and are managed by this module, and a couple of helper functions for obtaining a user record and a user session from the current HTTP context (using the ~Handler~ type we talked about in the last post).
+
+#+begin_src fsharp
+let loginGetEndpoint =
+  Handler.toEndpoint get loginRoute (fun () ->
+    Handler.return' (
+      Response.ofHtmlCsrf (fun csrfToken ->
+        Elem.html
+          []
+          [ Elem.body
+              []
+              [ Elem.form
+                  [ Attr.method "post" ]
+                  [ Elem.input [ Attr.name "username" ]
+                    Elem.input [ Attr.name "password" ]
+                    Xss.antiforgeryInput csrfToken
+                    Elem.input
+                      [ Attr.type' "submit"
+                        Attr.value "Submit" ] ] ] ])
+    ))
+#+end_src
+
+Our first end point is straight forward. When we receive a get request to the login path, we reply with a form containing a token to prevent cross site vulnerabilities and username and password fields.
+
+#+begin_src fsharp
+let private makePrincipal userRecord =
+  let claims =
+    [ new Claim("name", userRecord.Username)
+      new Claim("userId", userRecord.Id.ToString()) ]
+
+  let identity = new ClaimsIdentity(claims, "Cookies")
+
+  new ClaimsPrincipal(identity)
+
+let passwordHasher = PasswordHasher()
+
+let updateUser (id: System.Guid, events: seq<UserEvent>) =
+  handler {
+    do!
+      Marten.withMarten (fun marten ->
+        task {
+          // explicitly assign this as an array of objects
+          // so that Marten chooses the correct method
+          // overload for `Append`
+          let eventObjs: obj[] =
+            Array.ofSeq events |> Array.map box
+
+          marten.Events.Append(id, eventObjs) |> ignore
+          return! marten.SaveChangesAsync()
+        })
+
+    return!
+      Marten.withMarten (fun marten ->
+        marten.LoadAsync<UserRecord>(id))
+  }
+#+end_src
+
+Our next end point is going to actually handle the form coming in, so it requires a few more helpers. The web framework we're using will handle things like sessions for us, but only if we "buy into" the .NET standard ways of representing a user, in this case using the ~ClaimsPrincipal~ type - so we have a helper to map from one of our user records to a claims principal. We initialize a password hasher which will salt and hash our passwords for us (don't roll your own crypto, folks, especially when your language ecosystem has a decent implementation ready for you). And finally we add an other method that works within our HTTP context expressions - ~updateUser~ takes the ID of a user and a list of events and returns the updated ~UserRecord~.
+
+With all of that in place, we can write the ~loginPostEndpoint~.
+
+#+begin_src fsharp
+let loginPostEndpoint =
+  Handler.toEndpoint post loginRoute (fun () ->
+    handler {
+      let! loginData =
+        Handler.formDataOrFail
+          (Response.withStatusCode 400 >> Response.ofEmpty)
+          (fun f ->
+            Option.map2
+              (fun username password ->
+                { username = username
+                  password = password })
+              (f.TryGetStringNonEmpty "username")
+              (f.TryGetStringNonEmpty "password"))
+
+      let! userRecord =
+        findUserRecord loginData.username
+        |> Handler.ofOption (
+          Response.withStatusCode 403 >> Response.ofEmpty
+        )
+
+      let verificationResult =
+        passwordHasher.VerifyHashedPassword(
+          userRecord,
+          userRecord.PasswordHash,
+          loginData.password
+        )
+
+      match verificationResult with
+      | PasswordVerificationResult.Failed ->
+        return
+          (Response.withStatusCode 403 >> Response.ofEmpty)
+      | PasswordVerificationResult.Success ->
+        return
+          Response.signInAndRedirect
+            "Cookies"
+            (makePrincipal userRecord)
+            "/"
+      | PasswordVerificationResult.SuccessRehashNeeded ->
+        let! _ =
+          updateUser (
+            userRecord.Id,
+            [ PasswordChanged(
+                passwordHasher.HashPassword(
+                  userRecord,
+                  loginData.password
+                )
+              ) ]
+          )
+
+        return
+          Response.signInAndRedirect
+            "Cookies"
+            (makePrincipal userRecord)
+            "/"
+      | _ ->
+        return
+          failwithf
+            "Unknown password verification result type %O"
+            verificationResult
+
+    })
+#+end_src
+
+Time to actually use our ~handler~ expression in earnest! There is some personal preference in play here, but personally I really like the clear flow of the request we can see happening in this code. We either have the form data we need, or we return a ~400~ error. Then we either find a user record with a matching username, or we return a ~403~ error (we don't want to reveal whether a username exists or not, so we return the same code as for when the password is incorrect; security +1, helpful error messages to users -1). Then we check the password, and we either return ~403~ (if it is wrong) or log you in if it is correct. A minor piece of extra complexity is introduced by the fact that the password hasher may signal that the password is correct but the /hash/ needs updating in storage, a background operation that the user does not need to know about.
+
+I'll leave the other end points for the reader to read at their leisure [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][on Gitlab]], as they are either trivial (~logoutEndpoint~) or very similar to the log in end points (~signupGetEndpoint~ and ~signupPostEndpoint~).
+
+Finally, we get to the end of the module where we export everything that the web server setup code (the bottom layer in my newly christened "sandwich with julienned domain" architecture).
+
+#+begin_src fsharp
+let endpoints =
+  [ loginGetEndpoint
+    loginPostEndpoint
+    logoutEndpoint
+    signupGetEndpoint
+    signupPostEndpoint ]
+
+let martenConfig (storeOptions: Marten.StoreOptions) =
+  storeOptions.Projections.Add<UserRecordProjection>(
+    ProjectionLifecycle.Inline
+  )
+#+end_src
+
+At the moment, with only one domain, this is just an adhoc export of the points we're wanting to add to the webserver and the projections we want to add to ~Marten~. As the project grows, we'll probably add an interface that all domains will provide to allow for a standardized process for consuming the configuration. But there's little point trying to proactively create an abstraction over a single example of a pattern.
+
+And there you have it; event sourced (basic) user management for our web application. If you have thoughts and questions, drop them as an issue on the [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][CalDance repository]]. I'd love to see example repositories having in depth discussions of when the architecture they suggest is or isn't useful, even if (especially if!) that discussion includes comments critical of the architecture demonstrated.
+
+Next up: who knows? But probably a bit of testing and refactoring, our code is already a little messy in a few places.

@@ -11,7 +11,7 @@ As the series progresses, I'll carry on adding the sections here.
 1. [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
 2. [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
 3. [[../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
-4. [[../../../2024/03/01/dev-journal-4.org][Log in, log out]]: Adding the database and the ability to log into our web site
+4. [[../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
 
 ** Part 1: Foundations
 

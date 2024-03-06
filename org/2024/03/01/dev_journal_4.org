@@ -1,4 +1,4 @@
-#+TITLE: Log in, log out
+#+TITLE: Log in, log out: Dev Journal 4 (part 1)
 
 #+BEGIN_QUOTE
 This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -82,14 +82,14 @@ I quickly realized that I'd be happier with some kind of "result" mechanism - a 
 
 I also knew that I wanted a type safe way of writing handlers for paths with "place holder" sections.
 
-Because of that, I added a ~Routing~ in which I've defined a ~Handler~ type as below:
+Because of that, I added a ~Routing~ module in which I've defined a ~Handler~ type as below:
 
 #+begin_src fsharp
 type Handler<'a> =
   HttpContext -> Task<HttpContext * Result<'a, HttpHandler>>
 #+end_src
 
-For the sharp eyed among you with functional programming experience you may have spotted this is the same shape as the data type of a stateful either monad, and indeed we also define a computational expression called ~handler~ that allows us to now write our handlers in a more declarative style.
+For the sharp eyed among you with functional programming experience you may have spotted this is the same shape as the monad type of a stateful either monad, and indeed we also define a computational expression called ~handler~ that allows us to now write our handlers in a more declarative style.
 
 The revised ~indexEndpoint~ in the main program file gives a good example of what it looks like:
 
@@ -162,3 +162,5 @@ Now from within any HTTP handler we're writing, we can write code like:
 I think that's about enough for this blog post, because I want to leave a whole post for the real meat of this set of changes: our first domain entity, the ~User~.
 
 If you want a sneak peak, you can check out the PR and see how we can define a neat vertical slice of responsibility in our code base. The module takes the responsibility for user management all the way from the domain object, the events that can happen to it, the Marten config to make sure those are tracked, through to the paths that it has responsibility for and the UI that will be displayed when they are requested. Lots of fun stuff for us to talk about in the next exciting installment of "Dev Journal": different time, multiple channels, next week.
+
+Next up: [[file:../../../2024/03/05/dev_journal_4_2.org][Log in, log out (part 2)]]

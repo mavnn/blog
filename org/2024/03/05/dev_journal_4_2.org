@@ -50,7 +50,7 @@ open System.Security.Claims
 open Microsoft.AspNetCore.Identity
 #+end_src
 
-As just mentioned, this module is going to be responsible of the whole vertical slice of the application for user management, so we start by including everything we need from the data store (~Marten~) through to the UI (~Falco.Markup~). We could have created sub modules within a Users folder if needed, but the module is only ~300 lines long so I haven't split it up (yet).
+As just mentioned, this module is going to be responsible for the whole vertical slice of the application for user management, so we start by including everything we need from the data store (~Marten~) through to the UI (~Falco.Markup~). We could have created sub modules within a Users folder if needed, but the module is only ~300 lines long so I haven't split it up (yet).
 
 #+begin_src fsharp
 type User = { id: System.Guid; username: string }
@@ -295,7 +295,7 @@ Time to actually use our ~handler~ expression in earnest! There is some personal
 
 I'll leave the other end points for the reader to read at their leisure [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][on Gitlab]], as they are either trivial (~logoutEndpoint~) or very similar to the log in end points (~signupGetEndpoint~ and ~signupPostEndpoint~).
 
-Finally, we get to the end of the module where we export everything that the web server setup code (the bottom layer in my newly christened "sandwich with julienned domain" architecture).
+Finally, we get to the end of the module where we export everything that the web server setup code (the bottom layer in my newly christened "julienned domain sandwich" architecture).
 
 #+begin_src fsharp
 let endpoints =
@@ -311,7 +311,7 @@ let martenConfig (storeOptions: Marten.StoreOptions) =
   )
 #+end_src
 
-At the moment, with only one domain, this is just an adhoc export of the points we're wanting to add to the webserver and the projections we want to add to ~Marten~. As the project grows, we'll probably add an interface that all domains will provide to allow for a standardized process for consuming the configuration. But there's little point trying to proactively create an abstraction over a single example of a pattern.
+At the moment, with only one domain, this is just an adhoc export of the end points we're wanting to add to the webserver and the projections we want to add to ~Marten~. As the project grows, we'll probably add an interface that each of our domain modules will export which will provide to allow a standardized process for consuming the needed configuration. But there's little point trying to proactively create an abstraction over a single example of a pattern.
 
 And there you have it; event sourced (basic) user management for our web application. If you have thoughts and questions, drop them as an issue on the [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][CalDance repository]]. I'd love to see example repositories having in depth discussions of when the architecture they suggest is or isn't useful, even if (especially if!) that discussion includes comments critical of the architecture demonstrated.
 

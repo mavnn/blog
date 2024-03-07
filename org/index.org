@@ -1,6 +1,6 @@
 #+INCLUDE: ./blurb.inc.org
-- [[file:./2024/03/05/dev_journal_4_2.org][Log in, log out (part 2)]] (2024-03-05)
-- [[file:./2024/03/01/dev_journal_4.org][Log in, log out]] (2024-03-01)
+- [[file:./2024/03/05/dev_journal_4_2.org][Log in, log out: Dev Journal 4 (part 2)]] (2024-03-05)
+- [[file:./2024/03/01/dev_journal_4.org][Log in, log out: Dev Journal 4 (part 1)]] (2024-03-01)
 - [[file:./2024/02/21/adhd_and_tdd.org][ADHD and TDD]] (2024-02-21)
 - [[file:./2024/02/20/dev-journal-3.org][Does it run? Dev Journal 3]] (2024-02-20)
 - [[file:./2024/02/19/do-notation-for-typescript.org][Do notation for TypeScript]] (2024-02-19)

@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/09/dev_journal_5.html
 :PUBDATE: 2024-03-09
-:ID:       F88FAADF-52D2-43AE-847F-84DE2202EE07
+:ID:       07A20311-FA8B-4C64-96A5-94B0D1C5A78F
 :END:
 #+begin_quote
 This post is part 5 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal5?ref_type=tags][DevJournal5]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -22,7 +22,7 @@ Once you've done that, you can come back to this post which is about our first r
 
 ** Commit 1: central package management
 :PROPERTIES:
-:ID:       7047D223-6219-440C-9E50-7F0AD70D3DC7
+:ID:       B4005BCE-6962-43F0-B160-DED991709816
 :END:
 
 > [[https://gitlab.com/mavnn/caldance/-/commit/cdef80ad7bea6414357b99060b79d9f4b2cea9cf][Commit diff]]
@@ -37,7 +37,7 @@ The only code changes in this commit are to account for changes to how custom lo
 
 ** Commit 2: logging improvements
 :PROPERTIES:
-:ID:       B96166F1-827A-461F-86E3-FE19C658804D
+:ID:       BB0C5BDB-73CF-4B18-88E4-7F6D2E7624CB
 :END:
 
 > [[https://gitlab.com/mavnn/caldance/-/commit/14e38a1343566381628179e973c2b47341107a91][Commit diff]]
@@ -46,7 +46,7 @@ Talking about logging, our second commit enhances the logging we added to Marten
 
 ** Commit 3: tests
 :PROPERTIES:
-:ID:       78A20955-B9E6-4C88-879D-D79DD76CDC22
+:ID:       870D963F-82EF-4A3D-98A6-D7FB5860DF58
 :END:
 
 > [[https://gitlab.com/mavnn/caldance/-/commit/7072d5c5d77128da5330ec03df303ccf15f484d8][Commit diff]]
@@ -80,7 +80,7 @@ You can see the resulting test code in the new [[https://gitlab.com/mavnn/caldan
 
 ** Commit 4: standardize domain module setup
 :PROPERTIES:
-:ID:       BA82C7B5-E628-46AE-BA0B-3626D43327E3
+:ID:       F4FE9473-FF26-4B8F-A67D-13B3F71E450B
 :END:
 
 > [[https://gitlab.com/mavnn/caldance/-/commit/f7cec1f8109d0f50ebdc0884c01b30706c137e94][Commit diff]]
@@ -110,7 +110,7 @@ A bit of rearranging later, and we now have three domain modules all which expor
 
 ** Wrapping up
 :PROPERTIES:
-:ID:       662191E5-5F16-41AE-99C5-679E6039FFF2
+:ID:       2067DC8D-F887-476A-AD98-C58664B041F7
 :END:
 
 If you're an F# developer (or interested in becoming one) I hope the details of the commits are helpful. But there's a bigger take away here: names don't just matter /in/ our code; talking to people with terminology that is easy for them to grasp and which highlights the areas of shared importance on all sides is an enormously valuable skill. You may well struggle to explain why you want to spend time refactoring ("you want to spend time making changes to the routing module that /don't/ change what the code does?"), but "we need to improve the internal quality of the routing module so that we can write new features more quickly and correctly" is probably much easier to get agreement about.
@@ -121,7 +121,7 @@ Next time: starting to shape up our actual user interface (probably).
 
 ** Footnotes
 :PROPERTIES:
-:ID:       1AFC2535-9054-48F0-B0FD-465A113C06D1
+:ID:       E7810ABA-ACED-47E4-9B4F-CBB1B55BCC81
 :END:
 
 [fn:1] Yes, yes. I know it /does/ have a good definition. I'm just saying people don't use it very often, and it is actually quite hard to succinctly explain to someone who hasn't already got the context to know why you'd want to do such a thing.
@@ -129,7 +129,7 @@ Next time: starting to shape up our actual user interface (probably).
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/05/dev_journal_4_2.html
 :PUBDATE: 2024-03-05
-:ID:       4F7C1470-54C3-42D1-8CF0-C1FC4F151906
+:ID:       51121F94-0ED5-4693-B2A2-141651F0B5BD
 :END:
 #+begin_quote
 This post is the second half of a two part update in the "Dev Journal" series. [[file:../../../2024/03/01/dev_journal_4.org][The first half]] talks about adding dependencies to the project on postgresql and the Marten event store library, which we'll look at using in this post. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -139,7 +139,7 @@ So. We have an event store. Our website is going to have users. How do we go abo
 
 ** Where's the cheese?
 :PROPERTIES:
-:ID:       101032B7-6A7C-446A-9AA8-866AC37E5979
+:ID:       1E2037A6-C4EF-45DE-A090-9452A310746E
 :END:
 
 To borrow a term from domain driven design, this sounds like a "bounded context" within our system. Other parts of the code may care about certain events happening related to users (users being created, that kind of thing), but they probably shouldn't know or care about how the internals of "a user" work or what it takes to authenticate a user.
@@ -168,7 +168,7 @@ All of this to say: there's now a folder called ~Domain~ which holds our new, sh
 
 ** The cheese. We have found it.
 :PROPERTIES:
-:ID:       7DA36D9F-2689-4E28-AF87-4831C22AE852
+:ID:       E27F9C4B-808D-4B06-B596-DA0BAD87F0EC
 :END:
 
 #+begin_src fsharp
@@ -452,12 +452,12 @@ At the moment, with only one domain, this is just an adhoc export of the end poi
 
 And there you have it; event sourced (basic) user management for our web application. If you have thoughts and questions, drop them as an issue on the [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][CalDance repository]]. I'd love to see example repositories having in depth discussions of when the architecture they suggest is or isn't useful, even if (especially if!) that discussion includes comments critical of the architecture demonstrated.
 
-Next up: who knows? But probably a bit of testing and refactoring, our code is already a little messy in a few places.
+Next up: [[file:../../../2024/03/09/dev_journal_5.org][a round of internal quality control]].
 * Foundations: Dev Journal 1
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/31/dev-journal-1.html
 :PUBDATE: 2024-01-31
-:ID:       28FFCCD2-A2CE-4112-98A5-913310249961
+:ID:       4A75E3B2-9290-46CE-9FE7-A1E50A2B2D42
 :END:
 This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
 
@@ -469,24 +469,28 @@ As the series progresses, I'll carry on adding the sections here.
 
 ** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
 :PROPERTIES:
-:ID:       49867FEA-2011-44F0-8659-C0FDA0748C0F
+:ID:       321F5F00-8708-4F14-992C-7A41E31BFFEF
 :END:
 ** [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
 :PROPERTIES:
-:ID:       4D9FFCC9-6E58-4160-89DD-535F11338A8D
+:ID:       54F1D7A0-09F9-4DE3-9DFE-DDEACCE3EE5D
 :END:
 ** [[file:../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
 :PROPERTIES:
-:ID:       5E705A1A-6C2A-4F86-B885-CB81972EFBF5
+:ID:       E5211B0E-124C-4C89-AB4F-8F9330A9122C
 :END:
 ** [[file:../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
 :PROPERTIES:
-:ID:       33FF139C-5733-4E13-A561-EEA41A95F103
+:ID:       40F8850D-A967-46AA-BFBF-CA3C0968FE33
+:END:
+** [[file:../../../2024/03/09/dev_journal_5.org][Internal quality review]]: making it easier to make correct changes to our code
+:PROPERTIES:
+:ID:       E7D0E100-5FBD-45CF-AC62-24ABF8D5B114
 :END:
 
 ** Part 1: Foundations
 :PROPERTIES:
-:ID:       4CB918F0-08DD-4A67-8617-7FFD418F5476
+:ID:       19C1F63F-0592-4A9D-BFA9-5AA1022BD947
 :END:
 
 Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
@@ -495,30 +499,30 @@ On the things I'd like to try front, we have:
 
 ** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
 :PROPERTIES:
-:ID:       441E1526-9756-448E-A734-31696223BB94
+:ID:       FC0A3BF5-041B-4CF5-97BF-C57A482568E8
 :END:
 ** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
 :PROPERTIES:
-:ID:       6AA9E529-50A1-4AB5-B603-340C1BE7E40C
+:ID:       6B3B0151-9DF4-4B1F-9B97-8529C5814F68
 :END:
 
 On the technologies I've used before and found useful front, we have:
 
 ** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
 :PROPERTIES:
-:ID:       FE45EC92-7244-4B69-9D38-3A74E9DEE0CB
+:ID:       39D150A4-9519-4481-BD13-21581656F668
 :END:
 ** [[https://direnv.net/][direnv]] for seamless local development environments.
 :PROPERTIES:
-:ID:       7B59CD45-555A-4D97-8CE5-7B00B07B0F5E
+:ID:       1109EF37-AC9C-4E81-83C9-EF7B40D7DE28
 :END:
 ** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
 :PROPERTIES:
-:ID:       C8FE620E-9D5E-409D-B25B-A30A8A77E258
+:ID:       0A829AEE-3FC5-4CCB-8416-86D32A809615
 :END:
 ** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
 :PROPERTIES:
-:ID:       283AB6B3-7CA7-4700-B5E5-2682032442C1
+:ID:       69C1A833-D8B1-4CF7-95F2-25245D67DA48
 :END:
 
 I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
@@ -527,22 +531,22 @@ For today, let's start with a /minimum deployable product/: a "Hello world" Falc
 
 ** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
 :PROPERTIES:
-:ID:       E4B7CCBC-662C-44CD-9D1F-01818D3CEF6B
+:ID:       EEC306FC-2E4C-40EC-B279-95B9F99B73DD
 :END:
 ** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
 :PROPERTIES:
-:ID:       4CFC6FD1-1F1B-46EA-BEAA-5A1EFE7A6D4C
+:ID:       E103C1DD-E060-4D8B-9B70-1503290AF04E
 :END:
 ** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
 :PROPERTIES:
-:ID:       6EE636BA-FA1C-4A8B-8A4D-7C72092C2CAD
+:ID:       89AD2ACC-CE1B-4230-82CC-778F4197E301
 :END:
 
 Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
 
 *** Setup a nix flake to provide our environment
 :PROPERTIES:
-:ID:       A2B74D96-498A-4552-BE0A-5DB1B8BE73A6
+:ID:       D0185981-227C-45E6-8957-9933D7ECD824
 :END:
 
 A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
@@ -603,7 +607,7 @@ Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ hel
 
 *** direnv
 :PROPERTIES:
-:ID:       BA1E4D93-ECA1-44BB-8CC6-48B828781FAF
+:ID:       92D270C7-1E73-466E-8F18-E5FE36423871
 :END:
 
 Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
@@ -620,7 +624,7 @@ Next time we move into this directory, direnv will ask us to allow this ~.envrc~
 
 *** The F# project
 :PROPERTIES:
-:ID:       C1F867F5-5E41-49F7-86A1-537FC87DD5C3
+:ID:       0C1E4707-40DC-44A0-B2E1-C4C811D4A622
 :END:
 
 There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
@@ -643,7 +647,7 @@ Replace the contents of ~Program.fs~ with:
 
 *** Set up the CI pipeline
 :PROPERTIES:
-:ID:       1CF0E089-5A28-43F5-B69B-091D6B19BBBF
+:ID:       299E5FD9-3198-4DB4-881D-8C1551E81AFB
 :END:
 
 Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
@@ -674,7 +678,7 @@ It's worth noting here that Nix is a deterministic build system (for example, st
 
 *** Wrapping it all up
 :PROPERTIES:
-:ID:       62E73C4A-2107-4EB0-A344-20130709C2B7
+:ID:       A90BF053-1012-44EA-8DF8-73A02DCBB2F9
 :END:
 
 Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
@@ -683,14 +687,14 @@ As a bonus extra, anybody with nix installed can build and run the project witho
 
 *** Feedback? Comments?
 :PROPERTIES:
-:ID:       E302EBB2-605E-41DA-9C1A-1EB7E75CDB4C
+:ID:       CBAE7A43-D8FE-4CBE-A810-A5DA0039D626
 :END:
 
 Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
 
 *** Next
 :PROPERTIES:
-:ID:       2AD305DD-51C0-48B1-BE03-003AB8205BDF
+:ID:       CC3B2999-5C05-4DE3-BE2D-851AC3E0BA91
 :END:
 
 [[file:../../../2024/02/06/dev-journal-2.org][Part 2]] adds unit tests and consistent formatting to the project.
@@ -698,7 +702,7 @@ Have questions? Comments? Hate something, love something, know a better way of d
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/01/dev_journal_4.html
 :PUBDATE: 2024-03-01
-:ID:       5FFC9AEF-8EE4-4831-BFC5-7E5616255490
+:ID:       2631BB6D-C481-4863-9845-31D7CCCDE2F4
 :END:
 #+begin_quote
 This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -710,7 +714,7 @@ A lot has changed, and I'm not going to go into every single detail so if you're
 
 ** Nix pulling its weight
 :PROPERTIES:
-:ID:       1069EC44-EF1C-425D-A6ED-82874DCCA3EA
+:ID:       4BACBE58-2641-48E8-B71A-E29D6829516C
 :END:
 
 We're about to add a database to our project, and this is an area where Nix really shines.
@@ -749,7 +753,7 @@ Now we can run ~overmind s~ to start both postgres and a dotnet watcher to live 
 
 ** Adding some nuget dependencies
 :PROPERTIES:
-:ID:       F5882399-1185-4913-9DEE-B62CF7AC7D20
+:ID:       6E88DDAC-514B-4E48-95D8-57819DB71244
 :END:
 
 We're adding dependencies to our server of [[https://martendb.io/][Marten]] (document/event database library that sits on top of postgres) and [[https://serilog.net/][Serilog]] (a nice structured log library).
@@ -780,7 +784,7 @@ Then we can add our nuget packages as normal and everything continues to work:
 
 ** Opinionated endpoint builders
 :PROPERTIES:
-:ID:       41E18D87-8D5E-476C-9691-1D0C041CA2E2
+:ID:       A8A8849D-51F0-47EA-A417-F1039B1F461B
 :END:
 
 In general, the code to handle an endpoint in an AspNet.Core application is a function from ~HttpContext~ to ~Task~, where we mutate the HTTP context and then write the correct output stream.
@@ -839,7 +843,7 @@ Note the ~let!~ on the first line where we pull the user session out of the HTTP
 
 ** Connecting up the database
 :PROPERTIES:
-:ID:       E81934C8-42FC-4DAD-B0CC-BCA6757D4826
+:ID:       47A02C24-7BDE-4640-BE3F-6A072F634000
 :END:
 
 Having defined our handler type, it makes sense to make the rest of our tooling easy to use from within the abstraction.
@@ -871,7 +875,7 @@ Now from within any HTTP handler we're writing, we can write code like:
 
 ** To be continued...
 :PROPERTIES:
-:ID:       6E5D927A-DD3C-46FA-9FBC-CFA7C4A7EF8C
+:ID:       D587DFBD-EB9A-48E9-8107-CC4F75844AD2
 :END:
 
 I think that's about enough for this blog post, because I want to leave a whole post for the real meat of this set of changes: our first domain entity, the ~User~.

@@ -20,7 +20,7 @@ Once you've done that, you can come back to this post which is about our first r
 
 The first commit eliminates a surprisingly common source of bugs in a project: mismatched dependency versions between what you test, and what you deploy.
 
-To help combat this, in 2022 the NuGet project introduced "[[https://devblogs.microsoft.com/nuget/introducing-central-package-management/][central package management]]" which is a mechanism to allow each of your projects to specify /which/ packages it depends on, while managing the versions of /all/ packages across your whole project in one central location.
+To help combat this, in 2022 the NuGet introduced "[[https://devblogs.microsoft.com/nuget/introducing-central-package-management/][central package management]]" which is a mechanism to allow each of your project files to specify /which/ packages it depends on, while managing the versions of /all/ packages across your whole repository in one central location.
 
 Given that a new major version of Marten was released recently and I wanted to upgrade to use it, it seemed an ideal moment to put in a top level ~Directory.Packages.props~ file and remove the version numbers of dependencies from our ~fsproj~ files. An entire category of bugs eliminated permanently.
 
@@ -36,7 +36,7 @@ Talking about logging, our second commit enhances the logging we added to Marten
 
 > [[https://gitlab.com/mavnn/caldance/-/commit/7072d5c5d77128da5330ec03df303ccf15f484d8][Commit diff]]
 
-I've been lack on testing so far, and the place where that bothered me most was that I wasn't completely certain that the type safe route definition library I'd built would actually construct links that would "round trip" correctly through the AspNetCore machinery.
+I've been lax on testing so far, and the place where that bothered me most was that I wasn't completely certain that the type safe route definition library I'd built would actually construct links that would "round trip" correctly through the AspNetCore machinery.
 
 The idea is that I can define a route definition like so:
 

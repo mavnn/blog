@@ -1,0 +1,103 @@
+#+TITLE: Internal quality review: Dev Journal 5
+
+#+BEGIN_QUOTE
+This post is part 5 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal5?ref_type=tags][DevJournal5]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+END_QUOTE
+
+Refactoring. One of those terms that gets thrown around a lot by developers, but rarely gets well defined.[fn:1]
+
+Keeping a code base reliable, easy to maintain, and fast to deliver on is hard work, and often gets confused when we start talking about writing code that is "clean" (a word many moral implications that are not appropriate here) or "good" (what does "good" mean anyway?).
+
+Fortunately I don't need to write much to clarify your or my thinking here, because Geepaw Hill has already done an excellent job of doing so in this [[https://www.geepawhill.org/2018/01/09/underplayed-the-correlation-premise-in-depth/][2018 blog post]] where he explains the term "internal quality", which is the quality level of a code base as measured by how easy it is for /humans to change the code correctly/.
+
+Go read the post. It's good, I'll wait. Even if (like me) you don't always practice TDD!
+
+Once you've done that, you can come back to this post which is about our first round of "internal quality control" commits to the CalDance project now that it actually, you know, does something. /None/ of these commits alter the user experience or functionality of the code in any way.
+
+** Commit 1: central package management
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/cdef80ad7bea6414357b99060b79d9f4b2cea9cf][Commit diff]]
+
+The first commit eliminates a surprisingly common source of bugs in a project: mismatched dependency versions between what you test, and what you deploy.
+
+To help combat this, in 2022 the NuGet project introduced "[[https://devblogs.microsoft.com/nuget/introducing-central-package-management/][central package management]]" which is a mechanism to allow each of your projects to specify /which/ packages it depends on, while managing the versions of /all/ packages across your whole project in one central location.
+
+Given that a new major version of Marten was released recently and I wanted to upgrade to use it, it seemed an ideal moment to put in a top level ~Directory.Packages.props~ file and remove the version numbers of dependencies from our ~fsproj~ files. An entire category of bugs eliminated permanently.
+
+The only code changes in this commit are to account for changes to how custom logging is implemented in Marten 7.0.
+
+** Commit 2: logging improvements
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/14e38a1343566381628179e973c2b47341107a91][Commit diff]]
+
+Talking about logging, our second commit enhances the logging we added to Marten to make sure that we carry through the ~RequestId~ assigned by AspNetCore to any Marten operations. We also add an environment variable switch to change over to structured JSON logging in our packaged docker container; this is considerably more verbose but means that we always know which component is logging and which request the log relates to when we start feeding the logs through to a log aggregator in production.
+
+** Commit 3: tests
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/7072d5c5d77128da5330ec03df303ccf15f484d8][Commit diff]]
+
+I've been lack on testing so far, and the place where that bothered me most was that I wasn't completely certain that the type safe route definition library I'd built would actually construct links that would "round trip" correctly through the AspNetCore machinery.
+
+The idea is that I can define a route definition like so:
+
+#+begin_src fsharp
+let private greetingRoute =
+  literalSection "/greetings/" ./+ stringSection "name"
+#+end_src
+
+And using that route definition I should be able to create links to an endpoint that receives the any path parameters without them being changed.
+
+#+begin_src fsharp
+  // Any path I create with this function...
+  let link yourName = greetingRoute.link yourName
+
+  // ...should get handled by this endpoint, and
+  // ~greetingHandler~ should receive ~yourName~ as an input
+  let greetingEndpoint =
+    Handler.toEndpoint get greetingRoute greetingHandler
+#+end_src
+
+I wasn't sure how strings requiring URL escaping would be handled, so I added unit tests that actually call the underlying AspNet libraries to make sure I wasn't going to have any unpleasant surprises.
+
+It was a good thing I did, too, because the code did in fact do the wrong thing with strings that needed escaping. So this PR also includes the fixes.
+
+You can see the resulting test code in the new [[https://gitlab.com/mavnn/caldance/-/blob/DevJournal5/Server.Test/src/RouteDef.fs][RouteDef]] file in ~Server.Test~, which also shows just how easy it is to create a set of parameterized tests in Expecto.
+
+** Commit 4: standardize domain module setup
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/f7cec1f8109d0f50ebdc0884c01b30706c137e94][Commit diff]]
+
+In the previous post I said that I was a bit unhappy with how much of its internals the user domain module was exposing, and maybe I should give a standard way of a domain context to define itself - but it would be premature to do so with only one context.
+
+Then I realized that in some ways I already had a couple of other contexts; the home page, which you could claim is a bit borderline to call a context, and the greetings functionality which allows you to greet somebody.
+
+In a way this is smoke and mirrors; I'm well aware that these are not really bounded contexts within a domain in the way that we mean when talking about domain driven design. But at the same time, the point of writing this sort of "hello world" code is precisely because it starts telling you enough about the system you're building to be able to start designing based on reality rather than a set of assumptions.
+
+Looking at the code in question, it became clear that one thing would definitely already be helpful: an interface defining what endpoints a domain context provides and what config it needed to add to Marten.
+
+That led to the ~DomainSetup~ module:
+
+#+begin_src fsharp
+module Mavnn.CalDance.DomainSetup
+
+open Falco
+open Marten
+
+type IConstructedContext =
+  abstract member endpoints: HttpEndpoint list
+  abstract member martenConfig: StoreOptions -> unit
+#+end_src
+
+A bit of rearranging later, and we now have three domain modules all which export a context class that both implements the interface above and is also a convenient place to expose any link builders that the module wants to expose. A lot of other code could then immediately become private to each module.
+
+** Wrapping up
+
+If you're an F# developer (or interested in becoming one) I hope the details of the commits are helpful. But there's a bigger take away here: names don't just matter /in/ our code; talking to people with terminology that is easy for them to grasp and which highlights the areas of shared importance on all sides is an enormously valuable skill. You may well struggle to explain why you want to spend time refactoring ("you want to spend time making changes to the routing module that /don't/ change what the code does?"), but "we need to improve the internal quality of the routing module so that we can write new features more quickly and correctly" is probably much easier to get agreement about.
+
+I hope you're enjoying this journey of discovery with me - as always, if you have questions or comments all of the code is in the [[https://gitlab.com/mavnn/caldance][CalDance]] repository on GitLab. And if you'd like someone to help you keep the internal quality of *your* code base high then reach out about my [[file://../../../2024/01/29/short_term_help.org][short term consultancy]] services.
+
+Next time: starting to shape up our actual user interface (probably).
+
+* Footnotes
+
+[fn:1] Yes, yes. I know it /does/ have a good definition. I'm just saying people don't use it very often, and it is actually quite hard to succinctly explain to someone who hasn't already got the context to know why you'd want to do such a thing.

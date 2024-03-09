@@ -1,10 +1,135 @@
 #+TITLE: Mavnn's blog
 
+* Internal quality review: Dev Journal 5
+:PROPERTIES:
+:RSS_PERMALINK: 2024/03/09/dev_journal_5.html
+:PUBDATE: 2024-03-09
+:ID:       F88FAADF-52D2-43AE-847F-84DE2202EE07
+:END:
+#+begin_quote
+This post is part 5 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal5?ref_type=tags][DevJournal5]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+end_quote
+
+Refactoring. One of those terms that gets thrown around a lot by developers, but rarely gets well defined.[fn:1]
+
+Keeping a code base reliable, easy to maintain, and fast to deliver on is hard work, and often gets confused when we start talking about writing code that is "clean" (a word many moral implications that are not appropriate here) or "good" (what does "good" mean anyway?).
+
+Fortunately I don't need to write much to clarify your or my thinking here, because Geepaw Hill has already done an excellent job of doing so in this [[https://www.geepawhill.org/2018/01/09/underplayed-the-correlation-premise-in-depth/][2018 blog post]] where he explains the term "internal quality", which is the quality level of a code base as measured by how easy it is for /humans to change the code correctly/.
+
+Go read the post. It's good, I'll wait. Even if (like me) you don't always practice TDD!
+
+Once you've done that, you can come back to this post which is about our first round of "internal quality control" commits to the CalDance project now that it actually, you know, does something. /None/ of these commits alter the user experience or functionality of the code in any way.
+
+** Commit 1: central package management
+:PROPERTIES:
+:ID:       7047D223-6219-440C-9E50-7F0AD70D3DC7
+:END:
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/cdef80ad7bea6414357b99060b79d9f4b2cea9cf][Commit diff]]
+
+The first commit eliminates a surprisingly common source of bugs in a project: mismatched dependency versions between what you test, and what you deploy.
+
+To help combat this, in 2022 the NuGet project introduced "[[https://devblogs.microsoft.com/nuget/introducing-central-package-management/][central package management]]" which is a mechanism to allow each of your projects to specify /which/ packages it depends on, while managing the versions of /all/ packages across your whole project in one central location.
+
+Given that a new major version of Marten was released recently and I wanted to upgrade to use it, it seemed an ideal moment to put in a top level ~Directory.Packages.props~ file and remove the version numbers of dependencies from our ~fsproj~ files. An entire category of bugs eliminated permanently.
+
+The only code changes in this commit are to account for changes to how custom logging is implemented in Marten 7.0.
+
+** Commit 2: logging improvements
+:PROPERTIES:
+:ID:       B96166F1-827A-461F-86E3-FE19C658804D
+:END:
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/14e38a1343566381628179e973c2b47341107a91][Commit diff]]
+
+Talking about logging, our second commit enhances the logging we added to Marten to make sure that we carry through the ~RequestId~ assigned by AspNetCore to any Marten operations. We also add an environment variable switch to change over to structured JSON logging in our packaged docker container; this is considerably more verbose but means that we always know which component is logging and which request the log relates to when we start feeding the logs through to a log aggregator in production.
+
+** Commit 3: tests
+:PROPERTIES:
+:ID:       78A20955-B9E6-4C88-879D-D79DD76CDC22
+:END:
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/7072d5c5d77128da5330ec03df303ccf15f484d8][Commit diff]]
+
+I've been lack on testing so far, and the place where that bothered me most was that I wasn't completely certain that the type safe route definition library I'd built would actually construct links that would "round trip" correctly through the AspNetCore machinery.
+
+The idea is that I can define a route definition like so:
+
+#+begin_src fsharp
+  let private greetingRoute =
+    literalSection "/greetings/" ./+ stringSection "name"
+#+end_src
+
+And using that route definition I should be able to create links to an endpoint that receives the any path parameters without them being changed.
+
+#+begin_src fsharp
+  // Any path I create with this function...
+  let link yourName = greetingRoute.link yourName
+
+  // ...should get handled by this endpoint, and
+  // ~greetingHandler~ should receive ~yourName~ as an input
+  let greetingEndpoint =
+    Handler.toEndpoint get greetingRoute greetingHandler
+#+end_src
+
+I wasn't sure how strings requiring URL escaping would be handled, so I added unit tests that actually call the underlying AspNet libraries to make sure I wasn't going to have any unpleasant surprises.
+
+It was a good thing I did, too, because the code did in fact do the wrong thing with strings that needed escaping. So this PR also includes the fixes.
+
+You can see the resulting test code in the new [[https://gitlab.com/mavnn/caldance/-/blob/DevJournal5/Server.Test/src/RouteDef.fs][RouteDef]] file in ~Server.Test~, which also shows just how easy it is to create a set of parameterized tests in Expecto.
+
+** Commit 4: standardize domain module setup
+:PROPERTIES:
+:ID:       BA82C7B5-E628-46AE-BA0B-3626D43327E3
+:END:
+
+> [[https://gitlab.com/mavnn/caldance/-/commit/f7cec1f8109d0f50ebdc0884c01b30706c137e94][Commit diff]]
+
+In the previous post I said that I was a bit unhappy with how much of its internals the user domain module was exposing, and maybe I should give a standard way of a domain context to define itself - but it would be premature to do so with only one context.
+
+Then I realized that in some ways I already had a couple of other contexts; the home page, which you could claim is a bit borderline to call a context, and the greetings functionality which allows you to greet somebody.
+
+In a way this is smoke and mirrors; I'm well aware that these are not really bounded contexts within a domain in the way that we mean when talking about domain driven design. But at the same time, the point of writing this sort of "hello world" code is precisely because it starts telling you enough about the system you're building to be able to start designing based on reality rather than a set of assumptions.
+
+Looking at the code in question, it became clear that one thing would definitely already be helpful: an interface defining what endpoints a domain context provides and what config it needed to add to Marten.
+
+That led to the ~DomainSetup~ module:
+
+#+begin_src fsharp
+  module Mavnn.CalDance.DomainSetup
+
+  open Falco
+  open Marten
+
+  type IConstructedContext =
+    abstract member endpoints: HttpEndpoint list
+    abstract member martenConfig: StoreOptions -> unit
+#+end_src
+
+A bit of rearranging later, and we now have three domain modules all which export a context class that both implements the interface above and is also a convenient place to expose any link builders that the module wants to expose. A lot of other code could then immediately become private to each module.
+
+** Wrapping up
+:PROPERTIES:
+:ID:       662191E5-5F16-41AE-99C5-679E6039FFF2
+:END:
+
+If you're an F# developer (or interested in becoming one) I hope the details of the commits are helpful. But there's a bigger take away here: names don't just matter /in/ our code; talking to people with terminology that is easy for them to grasp and which highlights the areas of shared importance on all sides is an enormously valuable skill. You may well struggle to explain why you want to spend time refactoring ("you want to spend time making changes to the routing module that /don't/ change what the code does?"), but "we need to improve the internal quality of the routing module so that we can write new features more quickly and correctly" is probably much easier to get agreement about.
+
+I hope you're enjoying this journey of discovery with me - as always, if you have questions or comments all of the code is in the [[https://gitlab.com/mavnn/caldance][CalDance]] repository on GitLab. And if you'd like someone to help you keep the internal quality of *your* code base high then reach out about my [[file://../../../2024/01/29/short_term_help.org][short term consultancy]] services.
+
+Next time: starting to shape up our actual user interface (probably).
+
+** Footnotes
+:PROPERTIES:
+:ID:       1AFC2535-9054-48F0-B0FD-465A113C06D1
+:END:
+
+[fn:1] Yes, yes. I know it /does/ have a good definition. I'm just saying people don't use it very often, and it is actually quite hard to succinctly explain to someone who hasn't already got the context to know why you'd want to do such a thing.
 * Log in, log out: Dev Journal 4 (part 2)
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/05/dev_journal_4_2.html
 :PUBDATE: 2024-03-05
-:ID:       DD7DD12C-3A30-416F-A16B-8C0568CA634E
+:ID:       4F7C1470-54C3-42D1-8CF0-C1FC4F151906
 :END:
 #+begin_quote
 This post is the second half of a two part update in the "Dev Journal" series. [[file:../../../2024/03/01/dev_journal_4.org][The first half]] talks about adding dependencies to the project on postgresql and the Marten event store library, which we'll look at using in this post. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -14,7 +139,7 @@ So. We have an event store. Our website is going to have users. How do we go abo
 
 ** Where's the cheese?
 :PROPERTIES:
-:ID:       F90DDBF3-704B-4BBA-BA24-E00EE4477964
+:ID:       101032B7-6A7C-446A-9AA8-866AC37E5979
 :END:
 
 To borrow a term from domain driven design, this sounds like a "bounded context" within our system. Other parts of the code may care about certain events happening related to users (users being created, that kind of thing), but they probably shouldn't know or care about how the internals of "a user" work or what it takes to authenticate a user.
@@ -43,7 +168,7 @@ All of this to say: there's now a folder called ~Domain~ which holds our new, sh
 
 ** The cheese. We have found it.
 :PROPERTIES:
-:ID:       05D577B8-A347-484F-BEF3-6D93C82FB8E1
+:ID:       7DA36D9F-2689-4E28-AF87-4831C22AE852
 :END:
 
 #+begin_src fsharp
@@ -332,7 +457,7 @@ Next up: who knows? But probably a bit of testing and refactoring, our code is a
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/31/dev-journal-1.html
 :PUBDATE: 2024-01-31
-:ID:       5CC40DFE-A976-4C7D-8D04-B6AD83F4E269
+:ID:       28FFCCD2-A2CE-4112-98A5-913310249961
 :END:
 This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
 
@@ -344,24 +469,24 @@ As the series progresses, I'll carry on adding the sections here.
 
 ** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
 :PROPERTIES:
-:ID:       D556A63D-DBFD-4FE4-B147-0F95A3067703
+:ID:       49867FEA-2011-44F0-8659-C0FDA0748C0F
 :END:
 ** [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
 :PROPERTIES:
-:ID:       0653CD29-45F4-4498-AB72-B0F8BA789F94
+:ID:       4D9FFCC9-6E58-4160-89DD-535F11338A8D
 :END:
 ** [[file:../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
 :PROPERTIES:
-:ID:       DFAFC2D1-3409-4C26-8434-BC45A1EB2FF2
+:ID:       5E705A1A-6C2A-4F86-B885-CB81972EFBF5
 :END:
 ** [[file:../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
 :PROPERTIES:
-:ID:       ECCC61E0-8611-4FC9-89FE-3E0220EC69B1
+:ID:       33FF139C-5733-4E13-A561-EEA41A95F103
 :END:
 
 ** Part 1: Foundations
 :PROPERTIES:
-:ID:       2DFFD641-2C4B-42C0-A772-1BBFA9C86945
+:ID:       4CB918F0-08DD-4A67-8617-7FFD418F5476
 :END:
 
 Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
@@ -370,30 +495,30 @@ On the things I'd like to try front, we have:
 
 ** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
 :PROPERTIES:
-:ID:       B3A34548-5024-48E1-A6D7-D4E7EBBA0CDC
+:ID:       441E1526-9756-448E-A734-31696223BB94
 :END:
 ** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
 :PROPERTIES:
-:ID:       5410F358-7CB0-4CC6-9DDE-126D4F1B7E1B
+:ID:       6AA9E529-50A1-4AB5-B603-340C1BE7E40C
 :END:
 
 On the technologies I've used before and found useful front, we have:
 
 ** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
 :PROPERTIES:
-:ID:       CE83A447-7BB6-429F-B112-0E8FDB666BB0
+:ID:       FE45EC92-7244-4B69-9D38-3A74E9DEE0CB
 :END:
 ** [[https://direnv.net/][direnv]] for seamless local development environments.
 :PROPERTIES:
-:ID:       057A0B11-B786-4D8F-9D05-9B4D148789D7
+:ID:       7B59CD45-555A-4D97-8CE5-7B00B07B0F5E
 :END:
 ** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
 :PROPERTIES:
-:ID:       205021B4-9549-4F88-86AC-7C8CAFB17C9D
+:ID:       C8FE620E-9D5E-409D-B25B-A30A8A77E258
 :END:
 ** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
 :PROPERTIES:
-:ID:       54F711EA-F657-4145-9BA3-B0ABB1562F42
+:ID:       283AB6B3-7CA7-4700-B5E5-2682032442C1
 :END:
 
 I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
@@ -402,22 +527,22 @@ For today, let's start with a /minimum deployable product/: a "Hello world" Falc
 
 ** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
 :PROPERTIES:
-:ID:       2CA7146F-2471-40F3-9C42-65BBD77B4A49
+:ID:       E4B7CCBC-662C-44CD-9D1F-01818D3CEF6B
 :END:
 ** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
 :PROPERTIES:
-:ID:       E0BC04D5-EFA2-494D-9EFA-5344FC1782E6
+:ID:       4CFC6FD1-1F1B-46EA-BEAA-5A1EFE7A6D4C
 :END:
 ** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
 :PROPERTIES:
-:ID:       226B5A4E-1D4E-4235-A25A-FB3D527D7176
+:ID:       6EE636BA-FA1C-4A8B-8A4D-7C72092C2CAD
 :END:
 
 Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
 
 *** Setup a nix flake to provide our environment
 :PROPERTIES:
-:ID:       633BD854-78FF-4350-952B-07C92D240A24
+:ID:       A2B74D96-498A-4552-BE0A-5DB1B8BE73A6
 :END:
 
 A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
@@ -478,7 +603,7 @@ Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ hel
 
 *** direnv
 :PROPERTIES:
-:ID:       38C84D92-84B4-4F4B-A88F-A5C99EF9C7A1
+:ID:       BA1E4D93-ECA1-44BB-8CC6-48B828781FAF
 :END:
 
 Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
@@ -495,7 +620,7 @@ Next time we move into this directory, direnv will ask us to allow this ~.envrc~
 
 *** The F# project
 :PROPERTIES:
-:ID:       C1D4E2FC-16BA-4BE7-A989-C7A18E7C31B4
+:ID:       C1F867F5-5E41-49F7-86A1-537FC87DD5C3
 :END:
 
 There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
@@ -518,7 +643,7 @@ Replace the contents of ~Program.fs~ with:
 
 *** Set up the CI pipeline
 :PROPERTIES:
-:ID:       0960C970-588D-42E9-9D36-2147AD3389BF
+:ID:       1CF0E089-5A28-43F5-B69B-091D6B19BBBF
 :END:
 
 Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
@@ -549,7 +674,7 @@ It's worth noting here that Nix is a deterministic build system (for example, st
 
 *** Wrapping it all up
 :PROPERTIES:
-:ID:       96716D81-4412-44F8-8CC7-F5B32474554D
+:ID:       62E73C4A-2107-4EB0-A344-20130709C2B7
 :END:
 
 Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
@@ -558,14 +683,14 @@ As a bonus extra, anybody with nix installed can build and run the project witho
 
 *** Feedback? Comments?
 :PROPERTIES:
-:ID:       B08DC9D5-A6B1-48D6-A196-6753805362C7
+:ID:       E302EBB2-605E-41DA-9C1A-1EB7E75CDB4C
 :END:
 
 Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
 
 *** Next
 :PROPERTIES:
-:ID:       109E9C29-7E57-4318-9DD3-493F4CAD8708
+:ID:       2AD305DD-51C0-48B1-BE03-003AB8205BDF
 :END:
 
 [[file:../../../2024/02/06/dev-journal-2.org][Part 2]] adds unit tests and consistent formatting to the project.
@@ -573,7 +698,7 @@ Have questions? Comments? Hate something, love something, know a better way of d
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/01/dev_journal_4.html
 :PUBDATE: 2024-03-01
-:ID:       BA168719-96B2-4816-A066-DAEEB7D59B6E
+:ID:       5FFC9AEF-8EE4-4831-BFC5-7E5616255490
 :END:
 #+begin_quote
 This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -585,7 +710,7 @@ A lot has changed, and I'm not going to go into every single detail so if you're
 
 ** Nix pulling its weight
 :PROPERTIES:
-:ID:       4595DB10-A53E-45FA-A826-57ADCB5638BA
+:ID:       1069EC44-EF1C-425D-A6ED-82874DCCA3EA
 :END:
 
 We're about to add a database to our project, and this is an area where Nix really shines.
@@ -624,7 +749,7 @@ Now we can run ~overmind s~ to start both postgres and a dotnet watcher to live 
 
 ** Adding some nuget dependencies
 :PROPERTIES:
-:ID:       CA68AAE0-8409-4273-B5DA-3D0F1213E85B
+:ID:       F5882399-1185-4913-9DEE-B62CF7AC7D20
 :END:
 
 We're adding dependencies to our server of [[https://martendb.io/][Marten]] (document/event database library that sits on top of postgres) and [[https://serilog.net/][Serilog]] (a nice structured log library).
@@ -655,7 +780,7 @@ Then we can add our nuget packages as normal and everything continues to work:
 
 ** Opinionated endpoint builders
 :PROPERTIES:
-:ID:       AFF9DE1A-5E5B-4D65-8FB2-848E11ACEC05
+:ID:       41E18D87-8D5E-476C-9691-1D0C041CA2E2
 :END:
 
 In general, the code to handle an endpoint in an AspNet.Core application is a function from ~HttpContext~ to ~Task~, where we mutate the HTTP context and then write the correct output stream.
@@ -714,7 +839,7 @@ Note the ~let!~ on the first line where we pull the user session out of the HTTP
 
 ** Connecting up the database
 :PROPERTIES:
-:ID:       CAE45CD9-B915-48E8-9E00-274295EDBACE
+:ID:       E81934C8-42FC-4DAD-B0CC-BCA6757D4826
 :END:
 
 Having defined our handler type, it makes sense to make the rest of our tooling easy to use from within the abstraction.
@@ -746,7 +871,7 @@ Now from within any HTTP handler we're writing, we can write code like:
 
 ** To be continued...
 :PROPERTIES:
-:ID:       701D89AC-8329-4CD2-AB90-3FA663EC9AE7
+:ID:       6E5D927A-DD3C-46FA-9FBC-CFA7C4A7EF8C
 :END:
 
 I think that's about enough for this blog post, because I want to leave a whole post for the real meat of this set of changes: our first domain entity, the ~User~.
@@ -754,105 +879,3 @@ I think that's about enough for this blog post, because I want to leave a whole 
 If you want a sneak peak, you can check out the PR and see how we can define a neat vertical slice of responsibility in our code base. The module takes the responsibility for user management all the way from the domain object, the events that can happen to it, the Marten config to make sure those are tracked, through to the paths that it has responsibility for and the UI that will be displayed when they are requested. Lots of fun stuff for us to talk about in the next exciting installment of "Dev Journal": different time, multiple channels, next week.
 
 Next up: [[file:../../../2024/03/05/dev_journal_4_2.org][Log in, log out (part 2)]]
-* Do notation for TypeScript
-:PROPERTIES:
-:RSS_PERMALINK: 2024/02/19/do-notation-for-typescript.html
-:PUBDATE: 2024-02-19
-:ID:       BF1AC731-E84B-4BB7-A72A-6571C7D45425
-:END:
-This is rather an aside from recent blog posts, but something I found interesting none the less.
-
-Fair warning to start us off: this post assumes that you are aware of and understand "do notation" (or "computational expressions" or "monad syntax") and like the idea of having it available in TypeScript.
-
-It starts by working through a possible way of implementing a type safe representation of a sequence of monadic operations that has a much nicer user experience than nested continuation functions, and then leads into a lengthy example of both building and showing how to use a monad which I've found very useful when working in TypeScript for handling asynchronous code that needs to meaningfully respond to both successes and failures.
-
-The idea is that we're going to go from code that looks like this:
-
-#+begin_src typescript
-  export const processLaxCallback = ({
-    laxOperations,
-    commands,
-    localFunctions,
-  }: LaxCallbackDependencies) => async (httpRequest) => {
-    try {
-      const laxSignatureCheck = await laxOperations.checkSignature(httpRequest)
-      if(isFailure(signature)) {
-        await reportError(signature)
-        return
-      }
-      const laxContext = laxOperations.parseRequest({ httpRequest, laxSignatureCheck })
-      if(isFailure(laxContext)) {
-        await reportError(laxContext)
-        return
-      }
-      // ...continued
-    } catch (e) {
-      // ... etc
-    }
-  }
-#+end_src
-
-...to code that looks more like this:
-
-#+begin_src typescript
-  export const processLaxCallback = ({
-    laxOperations,
-    commands,
-    localFunctions,
-  }: LaxCallbackDependencies) =>
-    SolidChain.start<{ httpRequest: HttpRequest }, LaxCallBackState>()
-      .chain("laxSignatureCheck", laxOperations.checkSignature)
-      .chain("laxContext", laxOperations.parseRequest)
-      // ...continued
-#+end_src
-
-If you're impatient you can jump straight to [[id:8B8152C2-E896-4933-A30E-E01276B284A8][appendix 2]] where you will find a cut and pastable code block with everything you need to play with the code in the TypeScript editor of your choice.
-
-For the avoidance of any doubt, all the code in this blog post is available for re-use under the MIT license as list in [[id:E8C7C73E-C564-4CDE-B2D9-328AFDF256F1][appendix 3]].
-
-** The idea
-:PROPERTIES:
-:ID:       651D27A6-B0D6-4B7D-B815-3659CC0E22B9
-:END:
-
-TypeScript has one form of monad notation already - the ~await~ keyword. Unfortunately, there isn't any way to plug into the mechanism used and define your own alternative ~bind~ implementation without doing something dangerously hacky. And, frankly, the last thing your TypeScript code needs is an other sharp edge to cut yourself on.
-
-But... what does binding a value in monad notation really do? It doesn't allow you to write code you couldn't have written anyway long hand. It allows you to give the result of a calculation in your code in name in the current scope.
-
-So: if we consider the fact that a scope is really just a mapping from names to values, and that TypeScript allows function inputs to alter the type of their output... maybe we can do something with that?
-
-** Defining a scope
-:PROPERTIES:
-:ID:       8CC4508E-F9E8-4689-93EF-1D90E9C98BBF
-:END:
-
-A type that maps names to values is reasonably easy to define in TypeScript. It looks something like this:
-
-#+begin_src typescript
-  export type Scope<Keys extends string> = {
-    [K in Keys]: any;
-  };
-#+end_src
-
-We can say that anything we're willing to consider as a scope is a type that extends the type above: it will have some keys, which will all be strings, and they will map to some values, which will all be sub types of ~any~.
-
-Now we need a type safe way to add a value to the scope.
-
-We start with a calculated type which works out what the result of adding a value with a name to a scope should be:
-
-#+begin_src typescript
-  export type ExtendedScope<
-    OldScope extends Scope<any>,
-    NewField extends string,
-    NewValue
-  > = OldScope extends any
-    ? {
-        [K in keyof OldScope | NewField]: K extends NewField
-          ? NewValue
-          : K extends keyof OldScope
-          ? OldScope[K]
-          : never;
-      }
-    : never;
-#+end_src
-

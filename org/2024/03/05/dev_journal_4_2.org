@@ -315,4 +315,4 @@ At the moment, with only one domain, this is just an adhoc export of the end poi
 
 And there you have it; event sourced (basic) user management for our web application. If you have thoughts and questions, drop them as an issue on the [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][CalDance repository]]. I'd love to see example repositories having in depth discussions of when the architecture they suggest is or isn't useful, even if (especially if!) that discussion includes comments critical of the architecture demonstrated.
 
-Next up: who knows? But probably a bit of testing and refactoring, our code is already a little messy in a few places.
+Next up: [[../../../2024/03/09/dev_journal_5.org][a round of internal quality control]].

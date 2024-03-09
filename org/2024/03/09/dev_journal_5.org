@@ -51,7 +51,7 @@ let private greetingRoute =
   literalSection "/greetings/" ./+ stringSection "name"
 #+end_src
 
-And using that route definition I should be able to create links to an endpoint that receives the any path parameters without them being changed.
+And using that route definition I should be able to create links to an endpoint that receives any path parameters without them being changed.
 
 #+begin_src fsharp
   // Any path I create with this function...

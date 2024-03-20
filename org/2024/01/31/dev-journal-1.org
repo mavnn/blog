@@ -13,6 +13,7 @@ As the series progresses, I'll carry on adding the sections here.
 3. [[../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
 4. [[../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
 5. [[../../../2024/03/09/dev_journal_5.org][Internal quality review]]: making it easier to make correct changes to our code
+6. [[../../../2024/03/19/dev_journal_6.org][With style]]: Adding style and interactivity with server side HTML
 
 ** Part 1: Foundations
 

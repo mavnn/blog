@@ -104,7 +104,7 @@ If you're an F# developer (or interested in becoming one) I hope the details of 
 
 I hope you're enjoying this journey of discovery with me - as always, if you have questions or comments all of the code is in the [[https://gitlab.com/mavnn/caldance][CalDance]] repository on GitLab. And if you'd like someone to help you keep the internal quality of *your* code base high then reach out about my [[file://../../../2024/01/29/short_term_help.org][short term consultancy]] services.
 
-Next time: starting to shape up our actual user interface (probably).
+Next time: [[file:../../../2024/03/19/dev_journal_6.org][starting to shape up our actual user interface]].
 
 * Footnotes
 

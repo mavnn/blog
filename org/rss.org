@@ -1,10 +1,317 @@
 #+TITLE: Mavnn's blog
 
+* With style: Dev Journal 6
+:PROPERTIES:
+:RSS_PERMALINK: 2024/03/19/dev_journal_6.html
+:PUBDATE: 2024-03-19
+:ID:       466EAA49-9ED1-4F91-975E-19E5D0A80948
+:END:
+#+begin_quote
+This post is part 6 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal6?ref_type=tags][DevJournal6]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+end_quote
+
+In theory, our log in mechanism works. But in reality it looks like this:
+
+#+caption: Two unstyled, unlabeled text boxes next to a "Submit" button
+[[file:2024/03/19/before.png]]
+
+This is the post where we give it a make over, so that it starts looking more like this...
+
+#+caption: A snazzy looking login page
+[[file:2024/03/19/after.png]]
+
+...while also starting to build in some interactivity, usability, and feedback via HTMX.
+
+** The good, the bad, and the ugly
+:PROPERTIES:
+:ID:       7CBC4FE2-0DE4-4508-BAAE-C48A09CF84B3
+:END:
+
+You may remember from [[file:../../../2024/01/31/dev-journal-1.org][part 1]] that HTMX and Falco's markup library are both tools I'm trying out for the first time. This means that while I'm happy with the /results/ I achieved in this post, I'm not all that happy with the resulting code. Yet. There will be a refactoring follow up.
+
+Which translates to: don't take anything as an active recommendation of how to do things, but a chance to follow along as I learn a new tool.
+
+** The logic behind our changes
+:PROPERTIES:
+:ID:       AA0337A9-4D7E-4A66-8796-9E8F71853FC4
+:END:
+
+My first attempt at nice server side UI building hinges on two key ideas. 1) each domain module should be responsible for its own UI requirements and 2) the overall UI should look coherent.
+
+This sounds like a place for a style guide, so I created a ~StyleGuide~ directory and started hacking. We ended up with four files in here, each with their own little area of responsibility.
+
+*** Htmx
+:PROPERTIES:
+:ID:       61284239-9D1B-41C1-9F65-5036F96F2B88
+:END:
+
+The ~Htmx.fs~ file ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#e08193e43a637c573f535f953ec65131eded9044][link to the diff]]) is arguably not really part of the style guide, but it seemed the best place I had to put it.
+
+It defines a series of HTMX related attributes that I can then add to elements in other places without worrying about misspelling them.
+
+#+begin_src fsharp
+  let post url = Attr.create "hx-post" url
+  let get url = Attr.create "hx-get" url
+  let target elemId = Attr.create "hx-target" elemId
+  let swap details = Attr.create "hx-swap" details
+  let boost = Attr.createBool "hx-boost"
+  let indicator selector = Attr.create "hx-indicator" selector
+#+end_src
+
+It also provides a helper for endpoints responding to requests which may or may not be coming from HTMX. Remember that HTMX works by allowing you to respond to a request with a fragment of HTML which will then get embedded into the already loaded page, rather than requiring a full page refresh. This is great, but it means that endpoints which represent a "whole page" can end up being called in one of two ways: by HTMX wanting just the body of the page to embed, and by the browser trying to just load a URL.
+
+It felt like the logic for branching between these scenarios was going to come up enough it was worth capturing in a named function, so I did:
+
+#+begin_src fsharp
+  let htmxOrFull branches =
+    handler {
+      let! headers = Request.getHeaders |> Handler.fromCtx
+
+      let hasHxRequestHeader =
+        headers.Keys.Contains "HX-Request"
+
+      let isRequestingFullPage =
+        match
+          headers.TryGetBoolean "HX-History-Restore-Request"
+        with
+        | Some true -> true
+        | Some false
+        | None -> false
+
+      if hasHxRequestHeader && (not isRequestingFullPage) then
+        return! branches.onHtmx
+      else
+        return! branches.onFull
+    }
+#+end_src
+
+We'll be seeing this again in a bit.
+
+*** Modifier
+:PROPERTIES:
+:ID:       2F1940BC-C1DD-48B6-861C-EB679D486FBC
+:END:
+
+I'm planning on using Bulma as the basis for my CSS as it hits a reasonably sweet spot for me between having a good enough version of "most things" built in and not requiring me to mutate my HTML /too/ much to accommodate it. So the next thing to add was constants for some of the most common modifier classes that Bulma supports.
+
+#+begin_src fsharp
+  module Mavnn.CalDance.StyleGuide.Modifiers
+
+  open Falco.Markup
+
+  let isPrimary = Attr.class' "is-primary"
+
+  let isLink = Attr.class' "is-link"
+
+  let isInfo = Attr.class' "is-info"
+
+  let isSuccess = Attr.class' "is-info"
+
+  let isWarning = Attr.class' "is-warning"
+
+  let isDanger = Attr.class' "is-danger"
+#+end_src
+
+Boom. Done. Compiler as a spellcheck, tick.
+
+*** Layout
+:PROPERTIES:
+:ID:       44A42B9F-19F7-4116-A843-62380FB87F1A
+:END:
+
+As with the modifiers, I wanted to make it a little bit easier to do the "right thing" when creating a view, so I set up ~Layout.fs~ ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#fa9c7c3d5630a543415353918d553e91b7edc402][link to the diff]]) which includes a ~page~ function that takes a title and a list of sections and a set of broadly applicable elements like titles and links.
+
+At the moment the page template loads all of the libraries from shared CDNs, which is something we'll want to change before going to production. We're grabbing Bulma and HTMX as you'd expect, and also the "morphing" library written by the HTMX authors which attempts to only replace elements in the DOM that have actively changed. We also add a ~meta~ element to tell HTMX that when it adds a class to an element to signify it is loading, it should use the ~is-loading~ class from Bulma rather than the ~htmx-request~ class it defaults to.
+
+*** Form
+:PROPERTIES:
+:ID:       5B24B648-B1F0-4F20-AFF7-DDAEAE664CCE
+:END:
+
+The ~Form.fs~ module ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#26465d4af42079e4d5f2d9c698268260af59e9a0][link to the diff]]) is the place where I feel I've probably over engineered things. I started putting together a set of builder helpers and types for building forms and... yeah. I don't know. I think it's probably ended up a case of trying to add the abstraction before building the second use of something, and it shows. I'm not all that happy with the code that results.
+
+I'm not going to go into too much detail on this one, I'm just going to show it in use and remind the reader that this API may change in the future.
+
+** Actually doing the thing
+:PROPERTIES:
+:ID:       941CE818-A120-401A-B35A-B174B5B396A9
+:END:
+
+With our helpers constructed, we can start using them. Simple full page endpoints are quite simple; we just swap in the new ~Layout~ functions and we're good to go. For example, the view for the home page now looks like this:
+
+#+begin_src fsharp
+  Layout.page
+    "Home"
+    [ Layout.containerSection
+        [ Layout.title
+            Layout.T1
+            (match user with
+              | Some u -> $"Hi {u.username}!"
+              | None -> "You should go log in!")
+          Layout.paragraphX
+            []
+            [ Text.raw "Would you like to "
+              Layout.link
+                (greeting.greetingLink "Bob")
+                "greet Bob?" ] ] ]
+#+end_src
+
+As soon as we get to adding things like navigation bars to the page template they will all just appear.
+
+The magic, again, begins in the ~User.fs~ module. Let's have a think about the request life cycle with HTMX.
+
+*** Option 1: the user GETS the log in (or sign up) page
+:PROPERTIES:
+:ID:       1B4374A9-F318-4333-8244-60CE3B397436
+:END:
+
+In this case, we want to send a full page back to the user with an empty "user details" form; this form should not show any validation errors (don't you hate it when a form tells you empty fields aren't allowed before you've started typing?!).
+
+*** Option 2: the user POSTS invalid user data
+:PROPERTIES:
+:ID:       B3DC7618-D499-4430-B197-1FDE5B2384AE
+:END:
+
+Well, if the form fields just aren't in the POST we should return a 400: something is just broken. But if the correct fields exist and this request is flagged as being made by HTMX, what we want to do is update the form with the information about what the user needs to change. Preferably without removing all the information they've already added!
+
+*** Option 3: the user POSTS valid user data
+:PROPERTIES:
+:ID:       E9C5DF63-CD68-4081-A8A7-3E2A612CE526
+:END:
+
+In this case we want to log the user in and navigate them somewhere else in the website. We don't just want to return the form, we want to return the special ~HX-Location~ header which tells HTMX "load the body of that location and substitute it in to avoid a full page reload".
+
+In the case where we return an updated form, it is critical that as closely as possible it has exactly the same HTML structure as before to allow the merge logic to do its thing, so to allow that I built a "user data form" builder function that does all the things we need it to.
+
+It's a bit of a monster, but let's have a look:
+
+#+begin_src fsharp
+  let private userForm
+    csrfToken
+    location
+    usernameValue
+    usernameProb
+    passwordValue
+    passwordProb
+    =
+    let userInput =
+      Form.InputConfig.make "text" "username" "Your username"
+      |> Form.InputConfig.addLabel "Username"
+      |> Form.InputConfig.addIcons (Form.Left "mdi-account")
+      |> Form.InputConfig.setValue usernameValue
+      |> fun ic ->
+          match usernameProb with
+          | Some prob -> Form.InputConfig.addError prob ic
+          | None -> ic
+      |> Form.input
+
+    let passwordInput =
+      Form.InputConfig.make
+        "password"
+        "password"
+        "Your password"
+      |> Form.InputConfig.addLabel "Password"
+      |> Form.InputConfig.addIcons (Form.Left "mdi-lock")
+      |> Form.InputConfig.setValue passwordValue
+      |> fun ic ->
+          match passwordProb with
+          | Some prob -> Form.InputConfig.addError prob ic
+          | None -> ic
+      |> Form.input
+
+    Form.form
+      { csrfToken = csrfToken
+        id = "userform"
+        modifiers =
+          [ Htmx.post location
+            Htmx.target "closest form"
+            Htmx.indicator "#userFormSubmit button"
+            Htmx.swap "morph:{ignoreActiveValue:true}" ]
+        controls =
+          [ userInput
+            passwordInput
+            Form.button
+              "userFormSubmit"
+              "submit"
+              "Submit"
+              [ Modifiers.isPrimary ]
+              "Submit" ] }
+#+end_src
+
+The start of the function builds are two input fields, and then the interactive logic is all contained within the 4 HTMX attributes towards the end. These tell HTMX that it should post the form values to the location specified, place a loading indicator on the button within the element with ID ~userFormSubmit~, and then should try and morph the HTML it gets back into the closest form element.
+
+Now are post methods can return one of two different responses (assuming that we have form data, etc); if authentication succeeds we can send an empty 200 response with a location header and our session cookies:
+
+#+begin_src fsharp
+  let private signIn authScheme principal url =
+    handler {
+      do!
+        Handler.fromCtxTask (fun ctx ->
+          task { do! Auth.signIn authScheme principal ctx })
+
+      return!
+        Handler.fromCtx (
+          Response.withHeaders [ "HX-Location", url ]
+          >> ignore
+        )
+    }
+#+end_src
+
+If the data is invalid, we can respond with a form containing the relevant error messages, like so:
+
+#+begin_src fsharp
+  let private authenticationFailed formData location =
+    let failedAuth =
+      "Matching username and password not found"
+
+    Response.ofHtmlCsrf (fun token ->
+      userForm
+        token
+        location
+        (Some formData.username)
+        (Some failedAuth)
+        (Some formData.password)
+        (Some failedAuth))
+#+end_src
+
+Notice that we're carry through the form data that was posted to us rather than clearing the form out on every submit.
+
+This is also the module where we start making use of the HTMX branching helper we set up above, so we can add endpoints like:
+
+#+begin_src fsharp
+  let private logoutEndpoint routeNamespace =
+    Handler.toEndpoint
+      get
+      (logoutRoute routeNamespace)
+      (fun () ->
+        Htmx.htmxOrFull
+          { onHtmx =
+              handler {
+                do! signOut "Cookies" "/"
+                return Response.ofEmpty
+              }
+            onFull =
+              handler {
+                return
+                  Response.signOutAndRedirect "Cookies" "/"
+              } })
+#+end_src
+
+Browsing directly to the log out link in your browser will get you a redirect status code response, while clicking a ~log out~ link within the web app will take you back to the index page (logged out!) without having to do a full page refresh.
+
+*** That's a wrap
+:PROPERTIES:
+:ID:       A3561731-0CCD-4228-B529-680FC0D7F004
+:END:
+
+So, that's the main changes for this post. As normal there's the link at the top of the post to the repo as it was when the post was written. I'm not totally happy with the internal results here, but I'm happy enough that I don't want to spend time refactoring it before I've started using it on a second use case.
+
+Speaking of which, keep an eye out for the next post where we'll actually let a user /do/ something.
 * Internal quality review: Dev Journal 5
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/09/dev_journal_5.html
 :PUBDATE: 2024-03-09
-:ID:       156F25E6-70A2-4013-8940-80B8EE500337
+:ID:       0663C415-28C2-4803-A265-F5BB4BDBF462
 :END:
 #+begin_quote
 This post is part 5 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal5?ref_type=tags][DevJournal5]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -22,7 +329,7 @@ Once you've done that, you can come back to this post which is about our first r
 
 ** Commit 1: central package management
 :PROPERTIES:
-:ID:       A27468AF-6B4F-44B6-B7D5-7270F8EDC3E4
+:ID:       CECAB81B-D6E6-4DB3-8846-3CC5A16CF646
 :END:
 
 #+begin_quote
@@ -39,7 +346,7 @@ The only code changes in this commit are to account for changes to how custom lo
 
 ** Commit 2: logging improvements
 :PROPERTIES:
-:ID:       E7141097-377E-4471-8B5B-B8D23B5AB894
+:ID:       C11B6D6E-2F82-48F9-B1DA-D68AF625089C
 :END:
 
 #+begin_quote
@@ -50,7 +357,7 @@ Talking about logging, our second commit enhances the logging we added to Marten
 
 ** Commit 3: tests
 :PROPERTIES:
-:ID:       46728386-25DA-4E78-B879-B280166357AB
+:ID:       D724792B-12C1-4919-91BE-ED9773C58ACE
 :END:
 
 #+begin_quote
@@ -86,7 +393,7 @@ You can see the resulting test code in the new [[https://gitlab.com/mavnn/caldan
 
 ** Commit 4: standardize domain module setup
 :PROPERTIES:
-:ID:       F9565D50-DAE0-40AC-BB3C-1B82410DDBBB
+:ID:       E6339677-5056-4A35-82D3-1A6732ECE86B
 :END:
 
 #+begin_quote
@@ -118,18 +425,18 @@ A bit of rearranging later, and we now have three domain modules all which expor
 
 ** Wrapping up
 :PROPERTIES:
-:ID:       6E1A85F0-E7B6-45A0-9CF6-2661562B1D16
+:ID:       686EEEEC-81FE-4980-B3E6-D364130E52C4
 :END:
 
 If you're an F# developer (or interested in becoming one) I hope the details of the commits are helpful. But there's a bigger take away here: names don't just matter /in/ our code; talking to people with terminology that is easy for them to grasp and which highlights the areas of shared importance on all sides is an enormously valuable skill. You may well struggle to explain why you want to spend time refactoring ("you want to spend time making changes to the routing module that /don't/ change what the code does?"), but "we need to improve the internal quality of the routing module so that we can write new features more quickly and correctly" is probably much easier to get agreement about.
 
 I hope you're enjoying this journey of discovery with me - as always, if you have questions or comments all of the code is in the [[https://gitlab.com/mavnn/caldance][CalDance]] repository on GitLab. And if you'd like someone to help you keep the internal quality of *your* code base high then reach out about my [[file://../../../2024/01/29/short_term_help.org][short term consultancy]] services.
 
-Next time: starting to shape up our actual user interface (probably).
+Next time: [[file:../../../2024/03/19/dev_journal_6.org][starting to shape up our actual user interface]].
 
 ** Footnotes
 :PROPERTIES:
-:ID:       D7968615-2349-40E8-8643-D1F72091877B
+:ID:       D13098B7-34CD-46F6-8EED-AF0558906185
 :END:
 
 [fn:1] Yes, yes. I know it /does/ have a good definition. I'm just saying people don't use it very often, and it is actually quite hard to succinctly explain to someone who hasn't already got the context to know why you'd want to do such a thing.
@@ -137,7 +444,7 @@ Next time: starting to shape up our actual user interface (probably).
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/05/dev_journal_4_2.html
 :PUBDATE: 2024-03-05
-:ID:       8CBECD64-7FEA-4360-BC5A-578FE024830B
+:ID:       BA1B5860-E6BE-4074-B269-1E1465CBCA38
 :END:
 #+begin_quote
 This post is the second half of a two part update in the "Dev Journal" series. [[file:../../../2024/03/01/dev_journal_4.org][The first half]] talks about adding dependencies to the project on postgresql and the Marten event store library, which we'll look at using in this post. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -147,7 +454,7 @@ So. We have an event store. Our website is going to have users. How do we go abo
 
 ** Where's the cheese?
 :PROPERTIES:
-:ID:       9399596D-E859-4768-9793-5C10ACC1276E
+:ID:       69574665-9652-456A-93A4-AF66268594F3
 :END:
 
 To borrow a term from domain driven design, this sounds like a "bounded context" within our system. Other parts of the code may care about certain events happening related to users (users being created, that kind of thing), but they probably shouldn't know or care about how the internals of "a user" work or what it takes to authenticate a user.
@@ -176,7 +483,7 @@ All of this to say: there's now a folder called ~Domain~ which holds our new, sh
 
 ** The cheese. We have found it.
 :PROPERTIES:
-:ID:       C3F7CD32-11F8-4852-95D7-73FDCCF7D6A6
+:ID:       F2D293B8-B656-4D73-8492-31F56234CD90
 :END:
 
 #+begin_src fsharp
@@ -465,7 +772,7 @@ Next up: [[file:../../../2024/03/09/dev_journal_5.org][a round of internal quali
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/31/dev-journal-1.html
 :PUBDATE: 2024-01-31
-:ID:       6EB43067-A738-425B-92D5-CDC03428F9AD
+:ID:       6EE36177-A692-4D2B-B949-B2785801C8C9
 :END:
 This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
 
@@ -477,28 +784,32 @@ As the series progresses, I'll carry on adding the sections here.
 
 ** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
 :PROPERTIES:
-:ID:       56E8AFE4-A873-4820-8D99-30D4D709F15F
+:ID:       8090832E-B394-452D-B10D-B1A192A339FF
 :END:
 ** [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
 :PROPERTIES:
-:ID:       506B8AFB-E096-4B42-8FA2-F46678B71BC9
+:ID:       B2F254A9-7259-4009-A41A-48F234F04352
 :END:
 ** [[file:../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
 :PROPERTIES:
-:ID:       7330FC83-5CC4-4288-A5C3-4BE4825A3B1C
+:ID:       3DA51655-06CF-4BD7-82C7-F31C3FAF471F
 :END:
 ** [[file:../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
 :PROPERTIES:
-:ID:       94FD3719-4B82-4F19-98EA-933DB68C3CE5
+:ID:       3CDE3F5A-DF6E-4910-9AF1-1D3B1338240B
 :END:
 ** [[file:../../../2024/03/09/dev_journal_5.org][Internal quality review]]: making it easier to make correct changes to our code
 :PROPERTIES:
-:ID:       5E8EB04B-6E67-4B56-BF4B-D663AA64FE57
+:ID:       81CF6171-C984-4268-879A-262B59B5E251
+:END:
+** [[file:../../../2024/03/19/dev_journal_6.org][With style]]: Adding style and interactivity with server side HTML
+:PROPERTIES:
+:ID:       3F36940C-A2ED-4899-92E7-5E2598BAF2BD
 :END:
 
 ** Part 1: Foundations
 :PROPERTIES:
-:ID:       2FB69393-B0B7-4C12-A227-954C3F5D7DFE
+:ID:       DCB804AB-3A9C-49DA-993F-273E9479B485
 :END:
 
 Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
@@ -507,30 +818,30 @@ On the things I'd like to try front, we have:
 
 ** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
 :PROPERTIES:
-:ID:       13AE1F02-863E-40F1-9897-008517E6B7A2
+:ID:       0A46D6A7-EF81-4B7D-99D3-40EE4962144F
 :END:
 ** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
 :PROPERTIES:
-:ID:       9E4D3446-E784-4BDD-AD69-3B0927ADDB9B
+:ID:       DFC0F6C1-CA27-41FC-BEC5-C072D935A833
 :END:
 
 On the technologies I've used before and found useful front, we have:
 
 ** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
 :PROPERTIES:
-:ID:       0BCC1AF9-BC80-4306-99C1-AD75FF43CAFD
+:ID:       6A9EAC8C-BBE2-4711-B446-120EDBBF1507
 :END:
 ** [[https://direnv.net/][direnv]] for seamless local development environments.
 :PROPERTIES:
-:ID:       B6161624-E098-458E-9427-A8DAA8B683F3
+:ID:       06838C30-B5C9-4BEF-8C55-B4F9A74767B6
 :END:
 ** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
 :PROPERTIES:
-:ID:       79CD9897-EDBD-4390-9CD6-83A8EF0FA42D
+:ID:       8ABD06DC-9674-492A-8227-83BEEEE74F3F
 :END:
 ** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
 :PROPERTIES:
-:ID:       95FF90FF-3DF2-4D36-9076-CF97E952542D
+:ID:       580F37E6-8452-4323-B21E-78C6EE0E03AE
 :END:
 
 I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
@@ -539,22 +850,22 @@ For today, let's start with a /minimum deployable product/: a "Hello world" Falc
 
 ** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
 :PROPERTIES:
-:ID:       C05AB68E-AFB3-46A7-956A-6202A77552C7
+:ID:       9FBF4B92-07D8-484F-8776-D8A2D330628E
 :END:
 ** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
 :PROPERTIES:
-:ID:       42D79074-5D05-4470-BE24-4C21B72A1A3E
+:ID:       B668B364-F96A-4D9C-AC21-18CA65A166D5
 :END:
 ** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
 :PROPERTIES:
-:ID:       3BA8426E-1250-4BE8-86F0-270C3F35DEBA
+:ID:       1E2EB494-7A5C-4878-B49B-6B4ECA34D235
 :END:
 
 Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
 
 *** Setup a nix flake to provide our environment
 :PROPERTIES:
-:ID:       B2510CA6-5681-4948-9D31-39B9820EE00B
+:ID:       9257FA4D-DC7A-489D-AECD-E1E211417856
 :END:
 
 A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
@@ -615,7 +926,7 @@ Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ hel
 
 *** direnv
 :PROPERTIES:
-:ID:       B53E7595-4E09-4422-A1EA-A491B0C5EA15
+:ID:       89E8AFFC-04D3-4CC0-969B-80AC28AD427B
 :END:
 
 Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
@@ -632,7 +943,7 @@ Next time we move into this directory, direnv will ask us to allow this ~.envrc~
 
 *** The F# project
 :PROPERTIES:
-:ID:       40250B46-69F7-48D8-9943-06F0C90B47CC
+:ID:       93CD52A9-654A-4694-B302-D5260AA8403E
 :END:
 
 There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
@@ -655,7 +966,7 @@ Replace the contents of ~Program.fs~ with:
 
 *** Set up the CI pipeline
 :PROPERTIES:
-:ID:       6D0E5339-146E-418F-8016-2FD6E2C4D7DC
+:ID:       DC576C53-C805-4269-8136-DFC05B22AC3D
 :END:
 
 Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
@@ -686,7 +997,7 @@ It's worth noting here that Nix is a deterministic build system (for example, st
 
 *** Wrapping it all up
 :PROPERTIES:
-:ID:       CC3F1B34-70B4-4852-9762-55FA2D427B93
+:ID:       68EA3F34-268D-4998-9986-1903D252F0A7
 :END:
 
 Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
@@ -695,199 +1006,14 @@ As a bonus extra, anybody with nix installed can build and run the project witho
 
 *** Feedback? Comments?
 :PROPERTIES:
-:ID:       53792520-9115-455D-81DC-A1DE65455424
+:ID:       29C1D0D7-D731-4CFF-9A2E-D53714D9DC7E
 :END:
 
 Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
 
 *** Next
 :PROPERTIES:
-:ID:       413AD3B1-DC9D-4D0D-9B4A-DB7BA166755B
+:ID:       D9C69D04-0E5A-4913-ADB1-42C6A4EA8A8C
 :END:
 
 [[file:../../../2024/02/06/dev-journal-2.org][Part 2]] adds unit tests and consistent formatting to the project.
-* Log in, log out: Dev Journal 4 (part 1)
-:PROPERTIES:
-:RSS_PERMALINK: 2024/03/01/dev_journal_4.html
-:PUBDATE: 2024-03-01
-:ID:       ECEEB61D-E69F-439E-A690-AC98E021CB9C
-:END:
-#+begin_quote
-This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
-#+end_quote
-
-This is the big one: we have our first piece of event sourcing, and a bunch of infrastructure to get us there. So big, in fact, that I'm going to split the post into two and publish the remainder early next week.
-
-A lot has changed, and I'm not going to go into every single detail so if you're following along by hand I made a pull request for the changes added here so that you can [[https://gitlab.com/mavnn/caldance/-/merge_requests/2/diffs][see them all in one place]].
-
-** Nix pulling its weight
-:PROPERTIES:
-:ID:       B951A0D2-D9A5-4940-9C4B-3E5622AA51B7
-:END:
-
-We're about to add a database to our project, and this is an area where Nix really shines.
-
-Adding services with pinned versions of dependencies to are development environment is as simple as adding them to the list in ~flake.nix~:
-
-#+begin_src nix
-  devShells.default = pkgs.mkShell {
-    buildInputs = [
-      dnc.sdk_8_0
-      pkgs.nixfmt
-      pkgs.skopeo
-      pkgs.overmind
-      pkgs.tmux
-      pkgs.postgresql
-      fantomas
-      format-all
-      format-stdin
-      local_postgres
-    ];
-  };
-#+end_src
-
-The only clever thing we're doing here is also adding a ~local_postgres~ command which runs postgres with its data directory set to be a git ignored directory in the repository. This means that a simple git clean will reset the database along with everything else.
-
-As a courtesy to developers who may work on code that isn't CalDance, we also set a non-standard port for postgres to use in our ~.envrc~ file so that we don't compete with any system wide installations that may already be running.
-
-Overmind is a process runner that runs processes as defined in a ~Procfile~, so we add one to the root of the project with the following:
-
-#+begin_src procfile
-  server: dotnet watch --project Server/CalDance.Server.fsproj
-  postgres: local_postgres
-#+end_src
-
-Now we can run ~overmind s~ to start both postgres and a dotnet watcher to live recompile our server code as it changes.
-
-** Adding some nuget dependencies
-:PROPERTIES:
-:ID:       58E8108C-51A1-4688-B0F3-E3B22FCFDFD1
-:END:
-
-We're adding dependencies to our server of [[https://martendb.io/][Marten]] (document/event database library that sits on top of postgres) and [[https://serilog.net/][Serilog]] (a nice structured log library).
-
-Marten depends on a postgres library with native (i.e. non-dotnet) dlls, so to allow Nix to cache and link to the correct versions of the native code we have to specify which runtimes we expect to be building our code for. For the curious minded, you don't need to do this to be able to run ~dotnet build~ directly because the ~dotnet~ cli will dynamically download and add the required native libraries - which breaks Nix's caching strategy of a reproducible output from a fixed set of input files.
-
-This isn't a huge issue once you know you need to do it; you just add a ~RuntimeIdentifiers~ node to your project files under the ~TargetFramework~ node like so:
-
-#+begin_src xml
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
-    <RuntimeIdentifiers>osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
-  </PropertyGroup>
-#+end_src
-
-Then we can add our nuget packages as normal and everything continues to work:
-
-#+begin_src xml
-  <ItemGroup>
-    <PackageReference Include="Falco" Version="4.0.6" />
-    <PackageReference Include="Marten" Version="6.4.1" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-  </ItemGroup>
-#+end_src
-
-** Opinionated endpoint builders
-:PROPERTIES:
-:ID:       12C77E2A-938A-4F9C-842E-28CEEDF94ECB
-:END:
-
-In general, the code to handle an endpoint in an AspNet.Core application is a function from ~HttpContext~ to ~Task~, where we mutate the HTTP context and then write the correct output stream.
-
-Falco gives us an abstraction a little higher than that by giving us a set of composable functions for manipulating the HTTP context, which is already a step forward. But I was finding them harder to compose than I would like because in several cases the functions took two inputs and effectively "branched" the response that could be given - for example, do I have the form fields I expect in this POST request, or am I logged in.
-
-I quickly realized that I'd be happier with some kind of "result" mechanism - a way to be able to declare during the specification of a handler that I wanted to short circuit from this point onwards with a failure response.
-
-I also knew that I wanted a type safe way of writing handlers for paths with "place holder" sections.
-
-Because of that, I added a ~Routing~ module in which I've defined a ~Handler~ type as below:
-
-#+begin_src fsharp
-  type Handler<'a> =
-    HttpContext -> Task<HttpContext * Result<'a, HttpHandler>>
-#+end_src
-
-For the sharp eyed among you with functional programming experience you may have spotted this is the same shape as the monad type of a stateful either monad, and indeed we also define a computational expression called ~handler~ that allows us to now write our handlers in a more declarative style.
-
-The revised ~indexEndpoint~ in the main program file gives a good example of what it looks like:
-
-#+begin_src fsharp
-  let indexRoute = literalSection "/"
-
-  let indexEndpoint =
-    Handler.toEndpoint get indexRoute (fun () ->
-      handler {
-        let! user = User.getSessionUser
-
-        return
-          (Response.ofHtml (
-            Elem.html
-              []
-              [ Elem.body
-                  []
-                  [ Elem.h1
-                      []
-                      [ match user with
-                        | Some u ->
-                          Text.raw $"Hi {u.username}!"
-                        | None ->
-                          Text.raw "You should go log in!" ]
-                    Elem.p
-                      []
-                      [ Text.raw "Would you like to "
-                        Elem.a
-                          [ Attr.href (
-                              greetingRoute.link "Bob"
-                            ) ]
-                          [ Text.raw "greet Bob?" ] ] ] ]
-          ))
-      })
-#+end_src
-
-Note the ~let!~ on the first line where we pull the user session out of the HTTP context which the computational expression is "invisibly" carrying along for us.
-
-** Connecting up the database
-:PROPERTIES:
-:ID:       7759FEA0-D08A-4E21-A7A5-C29A692AA22C
-:END:
-
-Having defined our handler type, it makes sense to make the rest of our tooling easy to use from within the abstraction.
-
-The new ~Marten~ module contains some boiler plate to configure Marten and add Serilog logging to it, but most importantly it also adds:
-
-#+begin_src fsharp
-  let withMarten f =
-    Handler.fromCtx (fun ctx ->
-      ctx.GetService<IDocumentSession>())
-    |> Handler.bind (f >> Handler.returnTask)
-
-  // Marten returns null if a record isn't found, but
-  // F# records declare they can't be null. This works
-  // around that to return an option instead
-  let returnOption v =
-    if (v |> box |> isNull) then None else Some v
-#+end_src
-
-Now from within any HTTP handler we're writing, we can write code like:
-
-#+begin_src fsharp
-  let! user =
-    Marten.withMarten (fun marten ->
-      marten.LoadAsync<UserRecord>(id))
-#+end_src
-
-...and as if by magic the request specific Marten session will be pulled out of the HTTP context of the request and we can use it to connect to our data source.
-
-** To be continued...
-:PROPERTIES:
-:ID:       E93A704B-63B5-4696-AA06-F246D8E70BCA
-:END:
-
-I think that's about enough for this blog post, because I want to leave a whole post for the real meat of this set of changes: our first domain entity, the ~User~.
-
-If you want a sneak peak, you can check out the PR and see how we can define a neat vertical slice of responsibility in our code base. The module takes the responsibility for user management all the way from the domain object, the events that can happen to it, the Marten config to make sure those are tracked, through to the paths that it has responsibility for and the UI that will be displayed when they are requested. Lots of fun stuff for us to talk about in the next exciting installment of "Dev Journal": different time, multiple channels, next week.
-
-Next up: [[file:../../../2024/03/05/dev_journal_4_2.org][Log in, log out (part 2)]]

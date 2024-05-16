@@ -1,4 +1,5 @@
 #+INCLUDE: ./blurb.inc.org
+- [[file:./2024/05/17/adhd_refs.org][Types et al as accessibility tools for the ADHD brain]] (2024-05-17)
 - [[file:./2024/03/19/dev_journal_6.org][With style: Dev Journal 6]] (2024-03-19)
 - [[file:./2024/03/09/dev_journal_5.org][Internal quality review: Dev Journal 5]] (2024-03-09)
 - [[file:./2024/03/05/dev_journal_4_2.org][Log in, log out: Dev Journal 4 (part 2)]] (2024-03-05)

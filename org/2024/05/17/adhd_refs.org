@@ -16,11 +16,13 @@ Mads Torgersen (lead designer of C# at Microsoft) talks about his own diagnosis 
 
 (Bonus extra: that last link has /more/ links to more ADHD resources)
 
+Finally, I mentioned at one point an organization tool that happens to mesh fairly well with my own variant of ADHD called SkedPal: https://skedpal.com/. You prioritize tasks in advance, and assign them to "time maps" (i.e. this times are work times, these times are home times). Then you hit the button and it suggests a calendar of tasks. I've found it useful because it allows things like "this task is important to me but it doesn't matter when it is done" and "this task isn't very important but if I'm going to do it, it needs happen by Friday" and it will suggest a sane next thing to do. And when you (inevitably) fail to actually follow the plan, you just hit the button again and it suggests a new plan based on the things you actually did rather than the things it thought you were going to do.
+
 ** Evidence (or not) of my favourite programming techniques being better
 
 Dan Luu's tour de force review of research into whether or not strong typing leads to more reliable code: https://danluu.com/empirical-pl/
 
-Brian Marick has a well thought out post on why he's not fully convinced by property based testing: https://www.crustofcode.com/a-reluctant-rebuttal/. Most importantly he links to a paper written in /1990/ that partition testing has some issues, all of which would also apply to property based testing: https://www.site.uottawa.ca/~gvj/papers/Software%20Engineering%20IEEE%20Transactions%20on%201990%20Hamlet.pdf. It is worth noting that both Marick (about PBT), and Hamlet and Taylor (about partition testing) do both state that see use cases for these testing methods, but that they do also have concerns.
+Brian Marick has a well thought out post on why he's not fully convinced by property based testing: https://www.crustofcode.com/a-reluctant-rebuttal/. Most importantly he links to a paper written in /1990/ that partition testing has some issues, all of which would also apply to property based testing: https://www.site.uottawa.ca/~gvj/papers/Software%20Engineering%20IEEE%20Transactions%20on%201990%20Hamlet.pdf. It is worth noting that both Marick (about PBT), and Hamlet and Taylor (about partition testing) do state that they see use cases for these testing methods, but that they do also have concerns.
 
 The arguments I've heard against domain driven design have tended to be more anecdotal but mostly boil down to: "you're making the code harder to understand by forcing developers to understand both the code /and/ the specialist terminology of the users at the same time."
 

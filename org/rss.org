@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/05/17/adhd_refs.html
 :PUBDATE: 2024-05-17
-:ID:       37BF43F3-D48E-441A-A441-F4BF03B24E48
+:ID:       E4BDBC4D-9B45-448B-8F07-3ED5759A6748
 :END:
 I ended up with a fair number of references for my talks at Software You Can Love and LambdaDays 2024 on how I use various tools and techniques to compensate for my late diagnosed ADHD.
 
@@ -14,7 +14,7 @@ Now, the list of links!
 
 ** About ADHD
 :PROPERTIES:
-:ID:       81B60C4A-5FE2-4C23-9A3B-D06BE113BE20
+:ID:       216A9053-161E-4D32-856D-1ADA33CAD7D9
 :END:
 
 "How to ADHD" has lots of material on what ADHD is, how it manifests, and what you can do about it: https://howtoadhd.com/
@@ -25,20 +25,22 @@ Mads Torgersen (lead designer of C# at Microsoft) talks about his own diagnosis 
 
 (Bonus extra: that last link has /more/ links to more ADHD resources)
 
+Finally, I mentioned at one point an organization tool that happens to mesh fairly well with my own variant of ADHD called SkedPal: https://skedpal.com/. You prioritize tasks in advance, and assign them to "time maps" (i.e. this times are work times, these times are home times). Then you hit the button and it suggests a calendar of tasks. I've found it useful because it allows things like "this task is important to me but it doesn't matter when it is done" and "this task isn't very important but if I'm going to do it, it needs happen by Friday" and it will suggest a sane next thing to do. And when you (inevitably) fail to actually follow the plan, you just hit the button again and it suggests a new plan based on the things you actually did rather than the things it thought you were going to do. Caveat: it's not free software, and it does charge a monthly fee.
+
 ** Evidence (or not) of my favourite programming techniques being better
 :PROPERTIES:
-:ID:       8815CEA5-C5C6-41A3-8A4A-C5BA382CC27E
+:ID:       80269C63-1F73-427F-84E9-8894E2F92795
 :END:
 
 Dan Luu's tour de force review of research into whether or not strong typing leads to more reliable code: https://danluu.com/empirical-pl/
 
-Brian Marick has a well thought out post on why he's not fully convinced by property based testing: https://www.crustofcode.com/a-reluctant-rebuttal/. Most importantly he links to a paper written in /1990/ that partition testing has some issues, all of which would also apply to property based testing: https://www.site.uottawa.ca/~gvj/papers/Software%20Engineering%20IEEE%20Transactions%20on%201990%20Hamlet.pdf. It is worth noting that both Marick (about PBT), and Hamlet and Taylor (about partition testing) do both state that see use cases for these testing methods, but that they do also have concerns.
+Brian Marick has a well thought out post on why he's not fully convinced by property based testing: https://www.crustofcode.com/a-reluctant-rebuttal/. Most importantly he links to a paper written in /1990/ that partition testing has some issues, all of which would also apply to property based testing: https://www.site.uottawa.ca/~gvj/papers/Software%20Engineering%20IEEE%20Transactions%20on%201990%20Hamlet.pdf. It is worth noting that both Marick (about PBT), and Hamlet and Taylor (about partition testing) do state that they see use cases for these testing methods, but that they do also have concerns.
 
 The arguments I've heard against domain driven design have tended to be more anecdotal but mostly boil down to: "you're making the code harder to understand by forcing developers to understand both the code /and/ the specialist terminology of the users at the same time."
 
 ** Going deeper on Property Based Testing
 :PROPERTIES:
-:ID:       90AAA7A0-8C7B-4C5D-B43B-3D812A21A5B0
+:ID:       52244290-BD09-40AE-B90A-D5F32C06CB79
 :END:
 
 I happen to be a fan of Scott Wlaschin's video and blog posts at https://fsharpforfunandprofit.com/pbt/ titled "The lazy programmer's guide to writing 1000's of tests".
@@ -49,14 +51,14 @@ Fuzz testing is a related topic which somewhat overlaps, but with a different fo
 
 ** Leaning into union types, and domain driven design
 :PROPERTIES:
-:ID:       C99D294C-6E17-4035-A1D3-A0B6FBB61946
+:ID:       FBE319BA-D61F-4B76-83D0-31922B7234AD
 :END:
 
 I cannot over stress how amazing a book "Domain Modeling Made Functional" is (again, by Scott Wlaschin) https://pragprog.com/titles/swdddf/domain-modeling-made-functional/. There is also a talk covering the basics available at https://www.youtube.com/watch?v=MlPQ0FsPxPY.
 
 ** Pushing the boundaries on types
 :PROPERTIES:
-:ID:       8CF98A2D-6583-4152-9D9E-E41DBC197F56
+:ID:       00FCAD13-75AB-4DE0-9E9B-50BF536863CA
 :END:
 
 Probably the place to start is the Idris programming language https://www.idris-lang.org/
@@ -64,7 +66,7 @@ Probably the place to start is the Idris programming language https://www.idris-
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/19/dev_journal_6.html
 :PUBDATE: 2024-03-19
-:ID:       57B78426-F478-40D8-A46B-62482F778667
+:ID:       A6AF23E5-C3D3-48E3-B1BF-15A90E91D4B9
 :END:
 #+begin_quote
 This post is part 6 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal6?ref_type=tags][DevJournal6]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -84,7 +86,7 @@ This is the post where we give it a make over, so that it starts looking more li
 
 ** The good, the bad, and the ugly
 :PROPERTIES:
-:ID:       18D872C7-6848-428B-8B2F-54DCF6104E55
+:ID:       CE7D966B-1EF1-4A56-A302-AC4C821AE937
 :END:
 
 You may remember from [[file:../../../2024/01/31/dev-journal-1.org][part 1]] that HTMX and Falco's markup library are both tools I'm trying out for the first time. This means that while I'm happy with the /results/ I achieved in this post, I'm not all that happy with the resulting code. Yet. There will be a refactoring follow up.
@@ -93,7 +95,7 @@ Which translates to: don't take anything as an active recommendation of how to d
 
 ** The logic behind our changes
 :PROPERTIES:
-:ID:       2C8440E3-A88E-4043-88CE-606EAD0ADCE4
+:ID:       1DD43FF2-7122-42FC-93C2-3D672C385531
 :END:
 
 My first attempt at nice server side UI building hinges on two key ideas. 1) each domain module should be responsible for its own UI requirements and 2) the overall UI should look coherent.
@@ -102,7 +104,7 @@ This sounds like a place for a style guide, so I created a ~StyleGuide~ director
 
 *** Htmx
 :PROPERTIES:
-:ID:       C04CA3D9-003F-417B-A912-FDA0E62E1564
+:ID:       A4779FB6-F004-4AED-9237-D2EFD4EB8999
 :END:
 
 The ~Htmx.fs~ file ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#e08193e43a637c573f535f953ec65131eded9044][link to the diff]]) is arguably not really part of the style guide, but it seemed the best place I had to put it.
@@ -149,7 +151,7 @@ We'll be seeing this again in a bit.
 
 *** Modifier
 :PROPERTIES:
-:ID:       049BA31D-EAE0-4339-9BFC-7FA857CA104E
+:ID:       663C5440-5C89-4D43-90B8-EA4BBAF9AB6C
 :END:
 
 I'm planning on using Bulma as the basis for my CSS as it hits a reasonably sweet spot for me between having a good enough version of "most things" built in and not requiring me to mutate my HTML /too/ much to accommodate it. So the next thing to add was constants for some of the most common modifier classes that Bulma supports.
@@ -176,7 +178,7 @@ Boom. Done. Compiler as a spellcheck, tick.
 
 *** Layout
 :PROPERTIES:
-:ID:       44AF7817-58A6-441D-BF36-7F169DD01B4E
+:ID:       2E7BD423-B21E-4092-96DC-6267E23F6058
 :END:
 
 As with the modifiers, I wanted to make it a little bit easier to do the "right thing" when creating a view, so I set up ~Layout.fs~ ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#fa9c7c3d5630a543415353918d553e91b7edc402][link to the diff]]) which includes a ~page~ function that takes a title and a list of sections and a set of broadly applicable elements like titles and links.
@@ -185,7 +187,7 @@ At the moment the page template loads all of the libraries from shared CDNs, whi
 
 *** Form
 :PROPERTIES:
-:ID:       8A3980F9-DB58-4D1B-BDDC-864E016276B5
+:ID:       96A13037-44FB-437C-B895-F1B8846BA366
 :END:
 
 The ~Form.fs~ module ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#26465d4af42079e4d5f2d9c698268260af59e9a0][link to the diff]]) is the place where I feel I've probably over engineered things. I started putting together a set of builder helpers and types for building forms and... yeah. I don't know. I think it's probably ended up a case of trying to add the abstraction before building the second use of something, and it shows. I'm not all that happy with the code that results.
@@ -194,7 +196,7 @@ I'm not going to go into too much detail on this one, I'm just going to show it 
 
 ** Actually doing the thing
 :PROPERTIES:
-:ID:       DE2A17ED-4E27-48FC-A407-5401E051A757
+:ID:       7ABF4019-16C8-4CAD-8EAA-5DFBE302D63D
 :END:
 
 With our helpers constructed, we can start using them. Simple full page endpoints are quite simple; we just swap in the new ~Layout~ functions and we're good to go. For example, the view for the home page now looks like this:
@@ -222,21 +224,21 @@ The magic, again, begins in the ~User.fs~ module. Let's have a think about the r
 
 *** Option 1: the user GETS the log in (or sign up) page
 :PROPERTIES:
-:ID:       7753895E-3254-4743-9189-FC69E5C66FBC
+:ID:       D0D5470E-9543-41B2-8934-50460A2A169A
 :END:
 
 In this case, we want to send a full page back to the user with an empty "user details" form; this form should not show any validation errors (don't you hate it when a form tells you empty fields aren't allowed before you've started typing?!).
 
 *** Option 2: the user POSTS invalid user data
 :PROPERTIES:
-:ID:       D5B66738-1496-4DAF-B88E-943080F6CB28
+:ID:       C51561BA-0DCC-4BAE-87E3-DB3C1AE1D298
 :END:
 
 Well, if the form fields just aren't in the POST we should return a 400: something is just broken. But if the correct fields exist and this request is flagged as being made by HTMX, what we want to do is update the form with the information about what the user needs to change. Preferably without removing all the information they've already added!
 
 *** Option 3: the user POSTS valid user data
 :PROPERTIES:
-:ID:       B6193ECC-576D-43BB-8521-B401ADC06BA8
+:ID:       740548F8-EF9B-4E17-B4F0-145970D81463
 :END:
 
 In this case we want to log the user in and navigate them somewhere else in the website. We don't just want to return the form, we want to return the special ~HX-Location~ header which tells HTMX "load the body of that location and substitute it in to avoid a full page reload".
@@ -361,7 +363,7 @@ Browsing directly to the log out link in your browser will get you a redirect st
 
 *** That's a wrap
 :PROPERTIES:
-:ID:       934A6EB1-70B3-4B8E-8008-FA148E79E7EA
+:ID:       8DAC383D-CBB0-4D8F-A3FA-59AADA621516
 :END:
 
 So, that's the main changes for this post. As normal there's the link at the top of the post to the repo as it was when the post was written. I'm not totally happy with the internal results here, but I'm happy enough that I don't want to spend time refactoring it before I've started using it on a second use case.
@@ -371,7 +373,7 @@ Speaking of which, keep an eye out for the next post where we'll actually let a 
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/09/dev_journal_5.html
 :PUBDATE: 2024-03-09
-:ID:       F12A9C76-D648-49F4-A3D6-310B2CFE6997
+:ID:       AF690C89-0889-442A-9922-2DE826285F84
 :END:
 #+begin_quote
 This post is part 5 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal5?ref_type=tags][DevJournal5]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -389,7 +391,7 @@ Once you've done that, you can come back to this post which is about our first r
 
 ** Commit 1: central package management
 :PROPERTIES:
-:ID:       10C4FDD0-A921-4DBE-BD06-FBF47B8F25E6
+:ID:       0B8646A1-19AE-46E6-A4A1-EB9BCE3CEB0B
 :END:
 
 #+begin_quote
@@ -406,7 +408,7 @@ The only code changes in this commit are to account for changes to how custom lo
 
 ** Commit 2: logging improvements
 :PROPERTIES:
-:ID:       E2F11501-C5B1-485C-AFB2-FC85FC2E2BFA
+:ID:       52FE1808-CD67-4BA5-9872-9C9DA2D9F88B
 :END:
 
 #+begin_quote
@@ -417,7 +419,7 @@ Talking about logging, our second commit enhances the logging we added to Marten
 
 ** Commit 3: tests
 :PROPERTIES:
-:ID:       E84C7B54-281A-44E2-BF92-680F491D952A
+:ID:       C1F07196-9C20-45B8-AA4E-B3358ECC0BAE
 :END:
 
 #+begin_quote
@@ -453,7 +455,7 @@ You can see the resulting test code in the new [[https://gitlab.com/mavnn/caldan
 
 ** Commit 4: standardize domain module setup
 :PROPERTIES:
-:ID:       88402963-B18B-441B-86DC-FBC74F17FEE6
+:ID:       4AADAD4B-2084-46FC-A77D-F054ECFAEF92
 :END:
 
 #+begin_quote
@@ -485,7 +487,7 @@ A bit of rearranging later, and we now have three domain modules all which expor
 
 ** Wrapping up
 :PROPERTIES:
-:ID:       CD9DB647-E8A2-45D5-A57B-91884E127E6B
+:ID:       33479AA9-6DDB-4014-93A2-952156971146
 :END:
 
 If you're an F# developer (or interested in becoming one) I hope the details of the commits are helpful. But there's a bigger take away here: names don't just matter /in/ our code; talking to people with terminology that is easy for them to grasp and which highlights the areas of shared importance on all sides is an enormously valuable skill. You may well struggle to explain why you want to spend time refactoring ("you want to spend time making changes to the routing module that /don't/ change what the code does?"), but "we need to improve the internal quality of the routing module so that we can write new features more quickly and correctly" is probably much easier to get agreement about.
@@ -496,7 +498,7 @@ Next time: [[file:../../../2024/03/19/dev_journal_6.org][starting to shape up ou
 
 ** Footnotes
 :PROPERTIES:
-:ID:       C47D1E23-B80B-4E1E-85C7-A5D009BBE111
+:ID:       97E8B026-B07D-4250-B9DD-EFC9EABCF1A6
 :END:
 
 [fn:1] Yes, yes. I know it /does/ have a good definition. I'm just saying people don't use it very often, and it is actually quite hard to succinctly explain to someone who hasn't already got the context to know why you'd want to do such a thing.
@@ -504,7 +506,7 @@ Next time: [[file:../../../2024/03/19/dev_journal_6.org][starting to shape up ou
 :PROPERTIES:
 :RSS_PERMALINK: 2024/03/05/dev_journal_4_2.html
 :PUBDATE: 2024-03-05
-:ID:       8E593EAB-4D29-4CF6-B4FC-61A6105F199E
+:ID:       7009D8D4-241F-4CEF-A17B-083A1B8EAB8C
 :END:
 #+begin_quote
 This post is the second half of a two part update in the "Dev Journal" series. [[file:../../../2024/03/01/dev_journal_4.org][The first half]] talks about adding dependencies to the project on postgresql and the Marten event store library, which we'll look at using in this post. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
@@ -514,7 +516,7 @@ So. We have an event store. Our website is going to have users. How do we go abo
 
 ** Where's the cheese?
 :PROPERTIES:
-:ID:       268C4685-6893-4488-B7BC-7E528FD3C48E
+:ID:       E683F727-E8EE-468E-9721-068CED332C43
 :END:
 
 To borrow a term from domain driven design, this sounds like a "bounded context" within our system. Other parts of the code may care about certain events happening related to users (users being created, that kind of thing), but they probably shouldn't know or care about how the internals of "a user" work or what it takes to authenticate a user.
@@ -543,7 +545,7 @@ All of this to say: there's now a folder called ~Domain~ which holds our new, sh
 
 ** The cheese. We have found it.
 :PROPERTIES:
-:ID:       F1C66AD0-97D7-4C90-8602-365E88A5C414
+:ID:       F93BB932-C241-4849-9722-350EF74D246E
 :END:
 
 #+begin_src fsharp

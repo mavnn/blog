@@ -291,8 +291,8 @@ the name of the class and it will then run all of the dependency injection logic
 and get you an actual implementation at run time.
 
 In general, you just want to let Effect build up required dependencies itself; if we add a second service then the type
-system will capture that "automatically". If possible, it's a good idea to leave the types of
-your Effect functions inferred as then it will automatically pick up changes in dependencies. That
+system will capture that "automatically". If possible, leave the types of
+your Effect functions inferred as then it will automatically pick up changes in their dependencies. That
 said, I'll carry on adding them here so you can see what's happening.
 
 #+begin_src typescript

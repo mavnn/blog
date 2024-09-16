@@ -321,6 +321,6 @@ provided, which is done via the ~Layer~ type which provides facilities to manage
 with caching and life cycle management. But that, unfortunately, is definitely the subject of a complete
 write up of its own.
 
-### Have thoughts?
+*** Have thoughts?
 
 Leave you thoughts and comments on the [[https://mastodon.sdf.org/@mavnn/113147588182072037][Mastodon]] announcement post, and I'll engage with them there.

@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2024/09/16/intro_to_effect_ts.html
 :PUBDATE: 2024-09-16
-:ID:       318B6CED-B7D6-4A68-8E2B-695770C0AE14
+:ID:       86675698-1BDE-42AE-BB30-A0F24323163B
 :END:
 I've recently been writing TypeScript again in a green field project, and we made the decision to
 use the [[https://effect.website/][Effect]] library. It's not a small decision to make: although you can use bits of Effect in
@@ -20,7 +20,7 @@ This post is an attempt to do exactly that.
 
 ** The Effect type
 :PROPERTIES:
-:ID:       49B82B7F-AE67-44A4-BA51-4D87FAD1F705
+:ID:       793296DC-AE1B-44C8-B5D3-45FE062E7838
 :END:
 
 The very first thing you need to understand about Effect is that it is built around a specific type.
@@ -72,7 +72,7 @@ There is, however one big difference between these two which will catch you out 
 
 ** Hot and cold promises
 :PROPERTIES:
-:ID:       F0B31C92-29AA-412D-B7AD-E0F91A2B948D
+:ID:       C0FAD998-0E70-43DA-B2D0-2BBD2E957433
 :END:
 
 ~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
@@ -131,7 +131,7 @@ that the compiler is least able to warn you about.
 
 ** Pipes
 :PROPERTIES:
-:ID:       BDBAD4E6-8848-400E-BA52-AF969896BF90
+:ID:       B9A98B79-491D-4373-BBC8-6AF82433C1DD
 :END:
 
 Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.

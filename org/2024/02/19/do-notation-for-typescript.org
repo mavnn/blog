@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       CDFD82E0-56A0-4033-AFBE-0929A09F9BA7
+:END:
 #+TITLE: Do notation for TypeScript
 
 #+begin_quote

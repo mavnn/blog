@@ -1,3 +1,8 @@
+:PROPERTIES:
+:ID:       07A95791-A6AA-483E-B294-3A68DF584C65
+:END:
+#+TITLE: Mavnn's Blog
+
 #+INCLUDE: ./blurb.inc.org
 - [[file:./2024/09/16/intro_to_effect_ts.org][A gentle introduction to Effect TS]] (2024-09-16)
 - [[file:./2024/05/17/adhd_refs.org][Types et al as accessibility tools for the ADHD brain]] (2024-05-17)

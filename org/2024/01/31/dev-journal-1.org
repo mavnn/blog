@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       BEC296E9-14FB-4C4B-9F41-B15462323B56
+:END:
 #+TITLE: Foundations: Dev Journal 1
 
 This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.

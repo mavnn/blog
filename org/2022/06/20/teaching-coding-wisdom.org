@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       6B05BC22-A1B3-41EA-9BCA-8F5009AC8841
+:END:
 #+TITLE: Teaching (coding) wisdom
 #+DATE:<2022-06-20 Mon>
 

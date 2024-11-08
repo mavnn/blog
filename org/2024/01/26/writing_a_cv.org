@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       F7FC3366-60BA-4C64-8676-1322BA969965
+:END:
 #+TITLE: Writing CVs for more senior roles
 
 A while back (/checks notes, gulps/) I wrote a fairly successful [[https://blog.mavnn.co.uk/good-developer-cvs/][blog post on the types of CVs]] I liked receiving as one of the people screening technical applications, and some of the mistakes I was seeing applicants making.

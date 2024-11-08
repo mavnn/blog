@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       F998AFD4-A5F4-4A54-A0DD-F24DC7B56D66
+:END:
 #+TITLE: Scaffolding: Dev Journal 2
 
 #+BEGIN_QUOTE

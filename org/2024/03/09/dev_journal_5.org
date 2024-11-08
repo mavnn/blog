@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       B941379A-C4F4-4F4A-A91A-E36FEC62483B
+:END:
 #+TITLE: Internal quality review: Dev Journal 5
 
 #+BEGIN_QUOTE

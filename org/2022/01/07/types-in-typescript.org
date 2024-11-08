@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       8D0788A6-4741-42C5-B4CE-0DEA3690E294
+:END:
 #+TITLE: Why your Typescript compiles when you thought you were safe
 #+DATE:<2022-01-07 Fri>
 #+OPTIONS: toc:2

@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       897A1F78-39B6-4704-AF2F-2A774F9B1F72
+:END:
 #+TITLE: A gentle introduction to Effect TS
 
 I've recently been writing TypeScript again in a green field project, and we made the decision to

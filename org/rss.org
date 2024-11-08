@@ -1,143 +1,321 @@
 #+TITLE: Mavnn's blog
 
-* A gentle introduction to Effect TS
+* With style: Dev Journal 6
 :PROPERTIES:
-:RSS_PERMALINK: 2024/09/16/intro_to_effect_ts.html
-:PUBDATE: 2024-09-16
-:ID:       B3932808-0DE3-44BA-948B-F80166F73712
+:RSS_PERMALINK: 2024/03/19/dev_journal_6.html
+:PUBDATE: 2024-03-19
+:ID:       35CB9591-634A-4562-A8AB-7C32E9649C8D
 :END:
-I've recently been writing TypeScript again in a green field project, and we made the decision to
-use the [[https://effect.website/][Effect]] library. It's not a small decision to make: although you can use bits of Effect in
-an existing code base, its real benefit is when it is used as (to quote the website) "the missing
-standard library for TypeScript".
+#+begin_quote
+This post is part 6 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal6?ref_type=tags][DevJournal6]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+#+end_quote
 
-Overall, we're happy with the choice but the learning curve has a few sharp edges and while the
-[[https://effect.website/docs/introduction][docs]] aren't bad it does feel like they could do a better job of introducing the most used features
-in a way that feels familiar to TypeScript developers so they can at least *read existing* Effect
-code before starting to introduce the many, many, powerful features that come with the library.
+In theory, our log in mechanism works. But in reality it looks like this:
 
-This post is an attempt to do exactly that.
+#+caption: Two unstyled, unlabeled text boxes next to a "Submit" button
+[[file:2024/03/19/before.png]]
 
-** The Effect type
+This is the post where we give it a make over, so that it starts looking more like this...
+
+#+caption: A snazzy looking login page
+[[file:2024/03/19/after.png]]
+
+...while also starting to build in some interactivity, usability, and feedback via HTMX.
+
+** The good, the bad, and the ugly
 :PROPERTIES:
-:ID:       69C2A008-F608-4A73-9E73-4E13F8011021
-:END:
-
-The very first thing you need to understand about Effect is that it is built around a specific type.
-Appropriately enough, the ~Effect~ type. This type functions as a replacement for ~Promise~, allowing
-for asynchronous code, but also covers a few other needs.
-
-Let's get started, in the traditional way:
-
-#+begin_src typescript
-  import { Effect } from "effect"
-
-  const hello = (name?: string): Effect.Effect<string> =>
-    Effect.gen(function* () {
-      return `Hello, ${name || "world"}!`
-    })
-#+end_src
-
-This code is spiritually the same as writing:
-
-#+begin_src typescript
-  const helloAsync = async (name?: string): Promise<string> => {
-    return `Hello, ${name || "world"}!`
-  }
-#+end_src
-
-You can think of the ~Effect.gen(function* () { ... })~ as a slightly more verbose version of the ~async~ prefix to a function.
-
-What about calling the function? Again, we have a similar concept but different syntax to ~async/await~.
-
-#+begin_src typescript
-  // Effect version
-  const sayHello: Effect.Effect<void> =
-    Effect.gen(function* () {
-      const greeting = yield* hello("world")
-      yield* sendGreetings(greeting)
-    })
-
-  // Async/await version
-  const sayHelloAsync: Promise<void> = {
-    const greeting = await helloAsync("world")
-    await sendGreetingsAsync(greeting)
-  }
-#+end_src
-
-Given that we're using a cooperative scheduling system for asynchronous code, you can think of ~yield*~ as
-saying "hey runtime - I'm yielding the thread now, start me back up when the effect on the right has finished."
-
-There is, however one big difference between these two which will catch you out if you don't know about it.
-
-** Hot and cold promises
-:PROPERTIES:
-:ID:       270C3B72-6CC8-44C1-88F0-F961C6CE956B
+:ID:       127FC461-19CD-47E7-8409-3815D7528411
 :END:
 
-~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
+You may remember from [[file:../../../2024/01/31/dev-journal-1.org][part 1]] that HTMX and Falco's markup library are both tools I'm trying out for the first time. This means that while I'm happy with the /results/ I achieved in this post, I'm not all that happy with the resulting code. Yet. There will be a refactoring follow up.
 
-Well, in the example above ~sayHelloAsync~ is a constant value. As soon as the value is created, the logic within
-the promise will be scheduled for execution and we will start the process of asynchronously running the ~helloAsync~
-function. If we await the result of ~sayHelloAsync~ somewhere else, we will block until the function has finished.
+Which translates to: don't take anything as an active recommendation of how to do things, but a chance to follow along as I learn a new tool.
 
-This also means that if we ~await~ ~sayHelloAsync~ in two different places, we will only send greetings *once*. After
-all, the ~Promise~ type that we are handing around represents the running execution of an asynchronous process; it has
-already started, and awaiting it multiple times won't start it again.
-
-~Effect~, by contrast, is a "cold" or "thunked" asynchronous construct. It represents a series of steps that /will be/
-executed /if/ the result is requested.
-
-So if we run:
-
-#+begin_src typescript
-  const camelot: Effect.Effect<void> =
-    Effect.gen(function* () {
-      yield* sayHello
-      yield* sayHello
-      yield* sayHello
-    })
-#+end_src
-
-We will send the greetings three times, but only when somebody requests the result of running ~camelot~. Until
-then, nothing will happen at all.
-
-*If you remember nothing else from this post*, remember that an ~Effect~ that nobody executes never runs. This /will/ catch you
-out with logging.
-
-#+begin_src typescript
-  // logs nothing
-  const camelot: Effect.Effect<void> =
-    Effect.gen(function* () {
-      Effect.log("Bass voice: spam a looooooot")
-      yield* sayHello
-      yield* sayHello
-      yield* sayHello
-    })
-
-  // logs the bass voice
-  const camelot: Effect.Effect<void> =
-    Effect.gen(function* () {
-      yield* Effect.log("Bass voice: spam a looooooot")
-      yield* sayHello
-      yield* sayHello
-      yield* sayHello
-    })
-#+end_src
-
-Although the ability to create Effects without executing them can be extremely useful, leaving ~yield*~ out of
-your code when you actually need it is probably the most frustrating element of learning Effect, and the one
-that the compiler is least able to warn you about.
-
-** Pipes
+** The logic behind our changes
 :PROPERTIES:
-:ID:       E45EB858-A59C-4C6C-88A9-B6D328192014
+:ID:       A1D03E05-6E1F-48D4-8108-2742D2500633
 :END:
 
-Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.
+My first attempt at nice server side UI building hinges on two key ideas. 1) each domain module should be responsible for its own UI requirements and 2) the overall UI should look coherent.
 
-The main place you'll see this is that we can wrap ~Effect~ values in a wide variety of ways. These are very powerful,
-but quickly start suffering from the "lisp effect" of a pyramid of brackets when we start combining them.
+This sounds like a place for a style guide, so I created a ~StyleGuide~ directory and started hacking. We ended up with four files in here, each with their own little area of responsibility.
 
-Let's rewrite the ~camelot~ function above using the built in ~Effect.repeatN~ method:
+*** Htmx
+:PROPERTIES:
+:ID:       55AED1C9-C1F4-4208-8BDA-D4B0CC095273
+:END:
+
+The ~Htmx.fs~ file ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#e08193e43a637c573f535f953ec65131eded9044][link to the diff]]) is arguably not really part of the style guide, but it seemed the best place I had to put it.
+
+It defines a series of HTMX related attributes that I can then add to elements in other places without worrying about misspelling them.
+
+#+begin_src fsharp
+  let post url = Attr.create "hx-post" url
+  let get url = Attr.create "hx-get" url
+  let target elemId = Attr.create "hx-target" elemId
+  let swap details = Attr.create "hx-swap" details
+  let boost = Attr.createBool "hx-boost"
+  let indicator selector = Attr.create "hx-indicator" selector
+#+end_src
+
+It also provides a helper for endpoints responding to requests which may or may not be coming from HTMX. Remember that HTMX works by allowing you to respond to a request with a fragment of HTML which will then get embedded into the already loaded page, rather than requiring a full page refresh. This is great, but it means that endpoints which represent a "whole page" can end up being called in one of two ways: by HTMX wanting just the body of the page to embed, and by the browser trying to just load a URL.
+
+It felt like the logic for branching between these scenarios was going to come up enough it was worth capturing in a named function, so I did:
+
+#+begin_src fsharp
+  let htmxOrFull branches =
+    handler {
+      let! headers = Request.getHeaders |> Handler.fromCtx
+
+      let hasHxRequestHeader =
+        headers.Keys.Contains "HX-Request"
+
+      let isRequestingFullPage =
+        match
+          headers.TryGetBoolean "HX-History-Restore-Request"
+        with
+        | Some true -> true
+        | Some false
+        | None -> false
+
+      if hasHxRequestHeader && (not isRequestingFullPage) then
+        return! branches.onHtmx
+      else
+        return! branches.onFull
+    }
+#+end_src
+
+We'll be seeing this again in a bit.
+
+*** Modifier
+:PROPERTIES:
+:ID:       AAA75D29-619D-4A4E-88AE-E896477F21E5
+:END:
+
+I'm planning on using Bulma as the basis for my CSS as it hits a reasonably sweet spot for me between having a good enough version of "most things" built in and not requiring me to mutate my HTML /too/ much to accommodate it. So the next thing to add was constants for some of the most common modifier classes that Bulma supports.
+
+#+begin_src fsharp
+  module Mavnn.CalDance.StyleGuide.Modifiers
+
+  open Falco.Markup
+
+  let isPrimary = Attr.class' "is-primary"
+
+  let isLink = Attr.class' "is-link"
+
+  let isInfo = Attr.class' "is-info"
+
+  let isSuccess = Attr.class' "is-info"
+
+  let isWarning = Attr.class' "is-warning"
+
+  let isDanger = Attr.class' "is-danger"
+#+end_src
+
+Boom. Done. Compiler as a spellcheck, tick.
+
+*** Layout
+:PROPERTIES:
+:ID:       DA637C5D-21EB-4ADF-ACBB-4C594FEBDAF6
+:END:
+
+As with the modifiers, I wanted to make it a little bit easier to do the "right thing" when creating a view, so I set up ~Layout.fs~ ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#fa9c7c3d5630a543415353918d553e91b7edc402][link to the diff]]) which includes a ~page~ function that takes a title and a list of sections and a set of broadly applicable elements like titles and links.
+
+At the moment the page template loads all of the libraries from shared CDNs, which is something we'll want to change before going to production. We're grabbing Bulma and HTMX as you'd expect, and also the "morphing" library written by the HTMX authors which attempts to only replace elements in the DOM that have actively changed. We also add a ~meta~ element to tell HTMX that when it adds a class to an element to signify it is loading, it should use the ~is-loading~ class from Bulma rather than the ~htmx-request~ class it defaults to.
+
+*** Form
+:PROPERTIES:
+:ID:       C7FC0E2F-1D28-4373-BB5D-48D551AEC0D2
+:END:
+
+The ~Form.fs~ module ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#26465d4af42079e4d5f2d9c698268260af59e9a0][link to the diff]]) is the place where I feel I've probably over engineered things. I started putting together a set of builder helpers and types for building forms and... yeah. I don't know. I think it's probably ended up a case of trying to add the abstraction before building the second use of something, and it shows. I'm not all that happy with the code that results.
+
+I'm not going to go into too much detail on this one, I'm just going to show it in use and remind the reader that this API may change in the future.
+
+** Actually doing the thing
+:PROPERTIES:
+:ID:       1B5DC372-2894-4F53-87E3-26CF7F74A860
+:END:
+
+With our helpers constructed, we can start using them. Simple full page endpoints are quite simple; we just swap in the new ~Layout~ functions and we're good to go. For example, the view for the home page now looks like this:
+
+#+begin_src fsharp
+  Layout.page
+    "Home"
+    [ Layout.containerSection
+        [ Layout.title
+            Layout.T1
+            (match user with
+              | Some u -> $"Hi {u.username}!"
+              | None -> "You should go log in!")
+          Layout.paragraphX
+            []
+            [ Text.raw "Would you like to "
+              Layout.link
+                (greeting.greetingLink "Bob")
+                "greet Bob?" ] ] ]
+#+end_src
+
+As soon as we get to adding things like navigation bars to the page template they will all just appear.
+
+The magic, again, begins in the ~User.fs~ module. Let's have a think about the request life cycle with HTMX.
+
+*** Option 1: the user GETS the log in (or sign up) page
+:PROPERTIES:
+:ID:       4081A953-7725-4813-8772-3F22A14D1737
+:END:
+
+In this case, we want to send a full page back to the user with an empty "user details" form; this form should not show any validation errors (don't you hate it when a form tells you empty fields aren't allowed before you've started typing?!).
+
+*** Option 2: the user POSTS invalid user data
+:PROPERTIES:
+:ID:       42B31297-927D-4F14-AE56-41D820C344EE
+:END:
+
+Well, if the form fields just aren't in the POST we should return a 400: something is just broken. But if the correct fields exist and this request is flagged as being made by HTMX, what we want to do is update the form with the information about what the user needs to change. Preferably without removing all the information they've already added!
+
+*** Option 3: the user POSTS valid user data
+:PROPERTIES:
+:ID:       81C40517-EFE6-4484-85AE-6EEEC8B46B70
+:END:
+
+In this case we want to log the user in and navigate them somewhere else in the website. We don't just want to return the form, we want to return the special ~HX-Location~ header which tells HTMX "load the body of that location and substitute it in to avoid a full page reload".
+
+In the case where we return an updated form, it is critical that as closely as possible it has exactly the same HTML structure as before to allow the merge logic to do its thing, so to allow that I built a "user data form" builder function that does all the things we need it to.
+
+It's a bit of a monster, but let's have a look:
+
+#+begin_src fsharp
+  let private userForm
+    csrfToken
+    location
+    usernameValue
+    usernameProb
+    passwordValue
+    passwordProb
+    =
+    let userInput =
+      Form.InputConfig.make "text" "username" "Your username"
+      |> Form.InputConfig.addLabel "Username"
+      |> Form.InputConfig.addIcons (Form.Left "mdi-account")
+      |> Form.InputConfig.setValue usernameValue
+      |> fun ic ->
+          match usernameProb with
+          | Some prob -> Form.InputConfig.addError prob ic
+          | None -> ic
+      |> Form.input
+
+    let passwordInput =
+      Form.InputConfig.make
+        "password"
+        "password"
+        "Your password"
+      |> Form.InputConfig.addLabel "Password"
+      |> Form.InputConfig.addIcons (Form.Left "mdi-lock")
+      |> Form.InputConfig.setValue passwordValue
+      |> fun ic ->
+          match passwordProb with
+          | Some prob -> Form.InputConfig.addError prob ic
+          | None -> ic
+      |> Form.input
+
+    Form.form
+      { csrfToken = csrfToken
+        id = "userform"
+        modifiers =
+          [ Htmx.post location
+            Htmx.target "closest form"
+            Htmx.indicator "#userFormSubmit button"
+            Htmx.swap "morph:{ignoreActiveValue:true}" ]
+        controls =
+          [ userInput
+            passwordInput
+            Form.button
+              "userFormSubmit"
+              "submit"
+              "Submit"
+              [ Modifiers.isPrimary ]
+              "Submit" ] }
+#+end_src
+
+The start of the function builds are two input fields, and then the interactive logic is all contained within the 4 HTMX attributes towards the end. These tell HTMX that it should post the form values to the location specified, place a loading indicator on the button within the element with ID ~userFormSubmit~, and then should try and morph the HTML it gets back into the closest form element.
+
+Now are post methods can return one of two different responses (assuming that we have form data, etc); if authentication succeeds we can send an empty 200 response with a location header and our session cookies:
+
+#+begin_src fsharp
+  let private signIn authScheme principal url =
+    handler {
+      do!
+        Handler.fromCtxTask (fun ctx ->
+          task { do! Auth.signIn authScheme principal ctx })
+
+      return!
+        Handler.fromCtx (
+          Response.withHeaders [ "HX-Location", url ]
+          >> ignore
+        )
+    }
+#+end_src
+
+If the data is invalid, we can respond with a form containing the relevant error messages, like so:
+
+#+begin_src fsharp
+  let private authenticationFailed formData location =
+    let failedAuth =
+      "Matching username and password not found"
+
+    Response.ofHtmlCsrf (fun token ->
+      userForm
+        token
+        location
+        (Some formData.username)
+        (Some failedAuth)
+        (Some formData.password)
+        (Some failedAuth))
+#+end_src
+
+Notice that we're carry through the form data that was posted to us rather than clearing the form out on every submit.
+
+This is also the module where we start making use of the HTMX branching helper we set up above, so we can add endpoints like:
+
+#+begin_src fsharp
+  let private logoutEndpoint routeNamespace =
+    Handler.toEndpoint
+      get
+      (logoutRoute routeNamespace)
+      (fun () ->
+        Htmx.htmxOrFull
+          { onHtmx =
+              handler {
+                do! signOut "Cookies" "/"
+                return Response.ofEmpty
+              }
+            onFull =
+              handler {
+                return
+                  Response.signOutAndRedirect "Cookies" "/"
+              } })
+#+end_src
+
+Browsing directly to the log out link in your browser will get you a redirect status code response, while clicking a ~log out~ link within the web app will take you back to the index page (logged out!) without having to do a full page refresh.
+
+*** That's a wrap
+:PROPERTIES:
+:ID:       914545BF-87B1-4F4D-9CAC-7C5CD4AE7EEB
+:END:
+
+So, that's the main changes for this post. As normal there's the link at the top of the post to the repo as it was when the post was written. I'm not totally happy with the internal results here, but I'm happy enough that I don't want to spend time refactoring it before I've started using it on a second use case.
+
+Speaking of which, keep an eye out for the next post where we'll actually let a user /do/ something.
+* Short term help
+:PROPERTIES:
+:RSS_PERMALINK: 2024/01/29/short_term_help.html
+:PUBDATE: 2024-01-29
+:ID:       24EC4FD4-E986-4830-BC85-83215A304F92
+:END:
+#+html_head_extra: <meta property="og:image" content="https://blog.mavnn.co.uk/images/swirl.svg" /><meta property="og:type" content="article" /><meta property="og:title" content="Short term help" /><meta property="og:url" content="https://blog.mavnn.co.uk/2024/01/29/short_term_help.html" />
+
+#+begin_quote
+Updating to avoid any disappointment: I'm currently working a longer term contract again and I'm not available for the short term services listed here. Sorry!
+#+end_quote
 

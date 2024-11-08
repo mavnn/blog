@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       13C93632-F856-4CE5-A937-12C264E40684
+:END:
 #+TITLE: Short term help
 #+OPTIONS: num:t
 #+HTML_HEAD_EXTRA: <meta property="og:image" content="https://blog.mavnn.co.uk/images/swirl.svg" /><meta property="og:type" content="article" /><meta property="og:title" content="Short term help" /><meta property="og:url" content="https://blog.mavnn.co.uk/2024/01/29/short_term_help.html" />

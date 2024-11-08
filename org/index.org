@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       07A95791-A6AA-483E-B294-3A68DF584C65
+:END:
 #+INCLUDE: ./blurb.inc.org
 - [[file:./2024/03/19/dev_journal_6.org][With style: Dev Journal 6]] (2024-03-19)
 - [[file:./2024/03/09/dev_journal_5.org][Internal quality review: Dev Journal 5]] (2024-03-09)

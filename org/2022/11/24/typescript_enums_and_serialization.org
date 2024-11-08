@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       9A5F6DB1-046A-499E-BBDE-F08E79E7DB67
+:END:
 #+TITLE: TypeScript Enums and Serialization
 #+INDEX: TypeScript!Deserializing enums safely
 

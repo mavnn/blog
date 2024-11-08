@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       117F4C69-5241-45C3-A2B0-24D22F5F47F7
+:END:
 #+TITLE: Does it run? Dev Journal 3
 
 #+BEGIN_QUOTE

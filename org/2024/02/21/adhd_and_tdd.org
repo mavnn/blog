@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       1AE3A2A8-3195-475C-A52B-4D3112AB0395
+:END:
 #+TITLE: ADHD and TDD
 
 #+begin_quote

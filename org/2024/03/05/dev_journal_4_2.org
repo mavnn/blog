@@ -1,3 +1,6 @@
+:PROPERTIES:
+:ID:       9446CB6A-562A-4AE4-B1B2-BE4FCC6864C5
+:END:
 #+TITLE: Log in, log out: Dev Journal 4 (part 2)
 
 #+BEGIN_QUOTE

@@ -1,1019 +1,143 @@
 #+TITLE: Mavnn's blog
 
-* With style: Dev Journal 6
+* A gentle introduction to Effect TS
 :PROPERTIES:
-:RSS_PERMALINK: 2024/03/19/dev_journal_6.html
-:PUBDATE: 2024-03-19
-:ID:       466EAA49-9ED1-4F91-975E-19E5D0A80948
+:RSS_PERMALINK: 2024/09/16/intro_to_effect_ts.html
+:PUBDATE: 2024-09-16
+:ID:       B3932808-0DE3-44BA-948B-F80166F73712
 :END:
-#+begin_quote
-This post is part 6 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal6?ref_type=tags][DevJournal6]] tag for the CalDance project in GitLab holds the state of the repository as described here.
-#+end_quote
+I've recently been writing TypeScript again in a green field project, and we made the decision to
+use the [[https://effect.website/][Effect]] library. It's not a small decision to make: although you can use bits of Effect in
+an existing code base, its real benefit is when it is used as (to quote the website) "the missing
+standard library for TypeScript".
 
-In theory, our log in mechanism works. But in reality it looks like this:
+Overall, we're happy with the choice but the learning curve has a few sharp edges and while the
+[[https://effect.website/docs/introduction][docs]] aren't bad it does feel like they could do a better job of introducing the most used features
+in a way that feels familiar to TypeScript developers so they can at least *read existing* Effect
+code before starting to introduce the many, many, powerful features that come with the library.
 
-#+caption: Two unstyled, unlabeled text boxes next to a "Submit" button
-[[file:2024/03/19/before.png]]
+This post is an attempt to do exactly that.
 
-This is the post where we give it a make over, so that it starts looking more like this...
-
-#+caption: A snazzy looking login page
-[[file:2024/03/19/after.png]]
-
-...while also starting to build in some interactivity, usability, and feedback via HTMX.
-
-** The good, the bad, and the ugly
+** The Effect type
 :PROPERTIES:
-:ID:       7CBC4FE2-0DE4-4508-BAAE-C48A09CF84B3
+:ID:       69C2A008-F608-4A73-9E73-4E13F8011021
 :END:
 
-You may remember from [[file:../../../2024/01/31/dev-journal-1.org][part 1]] that HTMX and Falco's markup library are both tools I'm trying out for the first time. This means that while I'm happy with the /results/ I achieved in this post, I'm not all that happy with the resulting code. Yet. There will be a refactoring follow up.
+The very first thing you need to understand about Effect is that it is built around a specific type.
+Appropriately enough, the ~Effect~ type. This type functions as a replacement for ~Promise~, allowing
+for asynchronous code, but also covers a few other needs.
 
-Which translates to: don't take anything as an active recommendation of how to do things, but a chance to follow along as I learn a new tool.
+Let's get started, in the traditional way:
 
-** The logic behind our changes
-:PROPERTIES:
-:ID:       AA0337A9-4D7E-4A66-8796-9E8F71853FC4
-:END:
+#+begin_src typescript
+  import { Effect } from "effect"
 
-My first attempt at nice server side UI building hinges on two key ideas. 1) each domain module should be responsible for its own UI requirements and 2) the overall UI should look coherent.
-
-This sounds like a place for a style guide, so I created a ~StyleGuide~ directory and started hacking. We ended up with four files in here, each with their own little area of responsibility.
-
-*** Htmx
-:PROPERTIES:
-:ID:       61284239-9D1B-41C1-9F65-5036F96F2B88
-:END:
-
-The ~Htmx.fs~ file ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#e08193e43a637c573f535f953ec65131eded9044][link to the diff]]) is arguably not really part of the style guide, but it seemed the best place I had to put it.
-
-It defines a series of HTMX related attributes that I can then add to elements in other places without worrying about misspelling them.
-
-#+begin_src fsharp
-  let post url = Attr.create "hx-post" url
-  let get url = Attr.create "hx-get" url
-  let target elemId = Attr.create "hx-target" elemId
-  let swap details = Attr.create "hx-swap" details
-  let boost = Attr.createBool "hx-boost"
-  let indicator selector = Attr.create "hx-indicator" selector
+  const hello = (name?: string): Effect.Effect<string> =>
+    Effect.gen(function* () {
+      return `Hello, ${name || "world"}!`
+    })
 #+end_src
 
-It also provides a helper for endpoints responding to requests which may or may not be coming from HTMX. Remember that HTMX works by allowing you to respond to a request with a fragment of HTML which will then get embedded into the already loaded page, rather than requiring a full page refresh. This is great, but it means that endpoints which represent a "whole page" can end up being called in one of two ways: by HTMX wanting just the body of the page to embed, and by the browser trying to just load a URL.
-
-It felt like the logic for branching between these scenarios was going to come up enough it was worth capturing in a named function, so I did:
-
-#+begin_src fsharp
-  let htmxOrFull branches =
-    handler {
-      let! headers = Request.getHeaders |> Handler.fromCtx
-
-      let hasHxRequestHeader =
-        headers.Keys.Contains "HX-Request"
-
-      let isRequestingFullPage =
-        match
-          headers.TryGetBoolean "HX-History-Restore-Request"
-        with
-        | Some true -> true
-        | Some false
-        | None -> false
-
-      if hasHxRequestHeader && (not isRequestingFullPage) then
-        return! branches.onHtmx
-      else
-        return! branches.onFull
-    }
-#+end_src
-
-We'll be seeing this again in a bit.
-
-*** Modifier
-:PROPERTIES:
-:ID:       2F1940BC-C1DD-48B6-861C-EB679D486FBC
-:END:
-
-I'm planning on using Bulma as the basis for my CSS as it hits a reasonably sweet spot for me between having a good enough version of "most things" built in and not requiring me to mutate my HTML /too/ much to accommodate it. So the next thing to add was constants for some of the most common modifier classes that Bulma supports.
-
-#+begin_src fsharp
-  module Mavnn.CalDance.StyleGuide.Modifiers
-
-  open Falco.Markup
-
-  let isPrimary = Attr.class' "is-primary"
-
-  let isLink = Attr.class' "is-link"
-
-  let isInfo = Attr.class' "is-info"
-
-  let isSuccess = Attr.class' "is-info"
-
-  let isWarning = Attr.class' "is-warning"
-
-  let isDanger = Attr.class' "is-danger"
-#+end_src
-
-Boom. Done. Compiler as a spellcheck, tick.
-
-*** Layout
-:PROPERTIES:
-:ID:       44A42B9F-19F7-4116-A843-62380FB87F1A
-:END:
-
-As with the modifiers, I wanted to make it a little bit easier to do the "right thing" when creating a view, so I set up ~Layout.fs~ ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#fa9c7c3d5630a543415353918d553e91b7edc402][link to the diff]]) which includes a ~page~ function that takes a title and a list of sections and a set of broadly applicable elements like titles and links.
-
-At the moment the page template loads all of the libraries from shared CDNs, which is something we'll want to change before going to production. We're grabbing Bulma and HTMX as you'd expect, and also the "morphing" library written by the HTMX authors which attempts to only replace elements in the DOM that have actively changed. We also add a ~meta~ element to tell HTMX that when it adds a class to an element to signify it is loading, it should use the ~is-loading~ class from Bulma rather than the ~htmx-request~ class it defaults to.
-
-*** Form
-:PROPERTIES:
-:ID:       5B24B648-B1F0-4F20-AFF7-DDAEAE664CCE
-:END:
-
-The ~Form.fs~ module ([[https://gitlab.com/mavnn/caldance/-/merge_requests/5/diffs#26465d4af42079e4d5f2d9c698268260af59e9a0][link to the diff]]) is the place where I feel I've probably over engineered things. I started putting together a set of builder helpers and types for building forms and... yeah. I don't know. I think it's probably ended up a case of trying to add the abstraction before building the second use of something, and it shows. I'm not all that happy with the code that results.
-
-I'm not going to go into too much detail on this one, I'm just going to show it in use and remind the reader that this API may change in the future.
-
-** Actually doing the thing
-:PROPERTIES:
-:ID:       941CE818-A120-401A-B35A-B174B5B396A9
-:END:
-
-With our helpers constructed, we can start using them. Simple full page endpoints are quite simple; we just swap in the new ~Layout~ functions and we're good to go. For example, the view for the home page now looks like this:
-
-#+begin_src fsharp
-  Layout.page
-    "Home"
-    [ Layout.containerSection
-        [ Layout.title
-            Layout.T1
-            (match user with
-              | Some u -> $"Hi {u.username}!"
-              | None -> "You should go log in!")
-          Layout.paragraphX
-            []
-            [ Text.raw "Would you like to "
-              Layout.link
-                (greeting.greetingLink "Bob")
-                "greet Bob?" ] ] ]
-#+end_src
-
-As soon as we get to adding things like navigation bars to the page template they will all just appear.
-
-The magic, again, begins in the ~User.fs~ module. Let's have a think about the request life cycle with HTMX.
-
-*** Option 1: the user GETS the log in (or sign up) page
-:PROPERTIES:
-:ID:       1B4374A9-F318-4333-8244-60CE3B397436
-:END:
-
-In this case, we want to send a full page back to the user with an empty "user details" form; this form should not show any validation errors (don't you hate it when a form tells you empty fields aren't allowed before you've started typing?!).
-
-*** Option 2: the user POSTS invalid user data
-:PROPERTIES:
-:ID:       B3DC7618-D499-4430-B197-1FDE5B2384AE
-:END:
-
-Well, if the form fields just aren't in the POST we should return a 400: something is just broken. But if the correct fields exist and this request is flagged as being made by HTMX, what we want to do is update the form with the information about what the user needs to change. Preferably without removing all the information they've already added!
-
-*** Option 3: the user POSTS valid user data
-:PROPERTIES:
-:ID:       E9C5DF63-CD68-4081-A8A7-3E2A612CE526
-:END:
-
-In this case we want to log the user in and navigate them somewhere else in the website. We don't just want to return the form, we want to return the special ~HX-Location~ header which tells HTMX "load the body of that location and substitute it in to avoid a full page reload".
-
-In the case where we return an updated form, it is critical that as closely as possible it has exactly the same HTML structure as before to allow the merge logic to do its thing, so to allow that I built a "user data form" builder function that does all the things we need it to.
-
-It's a bit of a monster, but let's have a look:
-
-#+begin_src fsharp
-  let private userForm
-    csrfToken
-    location
-    usernameValue
-    usernameProb
-    passwordValue
-    passwordProb
-    =
-    let userInput =
-      Form.InputConfig.make "text" "username" "Your username"
-      |> Form.InputConfig.addLabel "Username"
-      |> Form.InputConfig.addIcons (Form.Left "mdi-account")
-      |> Form.InputConfig.setValue usernameValue
-      |> fun ic ->
-          match usernameProb with
-          | Some prob -> Form.InputConfig.addError prob ic
-          | None -> ic
-      |> Form.input
-
-    let passwordInput =
-      Form.InputConfig.make
-        "password"
-        "password"
-        "Your password"
-      |> Form.InputConfig.addLabel "Password"
-      |> Form.InputConfig.addIcons (Form.Left "mdi-lock")
-      |> Form.InputConfig.setValue passwordValue
-      |> fun ic ->
-          match passwordProb with
-          | Some prob -> Form.InputConfig.addError prob ic
-          | None -> ic
-      |> Form.input
-
-    Form.form
-      { csrfToken = csrfToken
-        id = "userform"
-        modifiers =
-          [ Htmx.post location
-            Htmx.target "closest form"
-            Htmx.indicator "#userFormSubmit button"
-            Htmx.swap "morph:{ignoreActiveValue:true}" ]
-        controls =
-          [ userInput
-            passwordInput
-            Form.button
-              "userFormSubmit"
-              "submit"
-              "Submit"
-              [ Modifiers.isPrimary ]
-              "Submit" ] }
-#+end_src
-
-The start of the function builds are two input fields, and then the interactive logic is all contained within the 4 HTMX attributes towards the end. These tell HTMX that it should post the form values to the location specified, place a loading indicator on the button within the element with ID ~userFormSubmit~, and then should try and morph the HTML it gets back into the closest form element.
-
-Now are post methods can return one of two different responses (assuming that we have form data, etc); if authentication succeeds we can send an empty 200 response with a location header and our session cookies:
-
-#+begin_src fsharp
-  let private signIn authScheme principal url =
-    handler {
-      do!
-        Handler.fromCtxTask (fun ctx ->
-          task { do! Auth.signIn authScheme principal ctx })
-
-      return!
-        Handler.fromCtx (
-          Response.withHeaders [ "HX-Location", url ]
-          >> ignore
-        )
-    }
-#+end_src
-
-If the data is invalid, we can respond with a form containing the relevant error messages, like so:
-
-#+begin_src fsharp
-  let private authenticationFailed formData location =
-    let failedAuth =
-      "Matching username and password not found"
-
-    Response.ofHtmlCsrf (fun token ->
-      userForm
-        token
-        location
-        (Some formData.username)
-        (Some failedAuth)
-        (Some formData.password)
-        (Some failedAuth))
-#+end_src
-
-Notice that we're carry through the form data that was posted to us rather than clearing the form out on every submit.
-
-This is also the module where we start making use of the HTMX branching helper we set up above, so we can add endpoints like:
-
-#+begin_src fsharp
-  let private logoutEndpoint routeNamespace =
-    Handler.toEndpoint
-      get
-      (logoutRoute routeNamespace)
-      (fun () ->
-        Htmx.htmxOrFull
-          { onHtmx =
-              handler {
-                do! signOut "Cookies" "/"
-                return Response.ofEmpty
-              }
-            onFull =
-              handler {
-                return
-                  Response.signOutAndRedirect "Cookies" "/"
-              } })
-#+end_src
-
-Browsing directly to the log out link in your browser will get you a redirect status code response, while clicking a ~log out~ link within the web app will take you back to the index page (logged out!) without having to do a full page refresh.
-
-*** That's a wrap
-:PROPERTIES:
-:ID:       A3561731-0CCD-4228-B529-680FC0D7F004
-:END:
-
-So, that's the main changes for this post. As normal there's the link at the top of the post to the repo as it was when the post was written. I'm not totally happy with the internal results here, but I'm happy enough that I don't want to spend time refactoring it before I've started using it on a second use case.
-
-Speaking of which, keep an eye out for the next post where we'll actually let a user /do/ something.
-* Internal quality review: Dev Journal 5
-:PROPERTIES:
-:RSS_PERMALINK: 2024/03/09/dev_journal_5.html
-:PUBDATE: 2024-03-09
-:ID:       0663C415-28C2-4803-A265-F5BB4BDBF462
-:END:
-#+begin_quote
-This post is part 5 of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal5?ref_type=tags][DevJournal5]] tag for the CalDance project in GitLab holds the state of the repository as described here.
-#+end_quote
-
-Refactoring. One of those terms that gets thrown around a lot by developers, but rarely gets well defined.[fn:1]
-
-Keeping a code base reliable, easy to maintain, and fast to deliver on is hard work, and often gets confused when we start talking about writing code that is "clean" (a word many moral implications that are not appropriate here) or "good" (what does "good" mean anyway?).
-
-Fortunately I don't need to write much to clarify your or my thinking here, because Geepaw Hill has already done an excellent job of doing so in this [[https://www.geepawhill.org/2018/01/09/underplayed-the-correlation-premise-in-depth/][2018 blog post]] where he explains the term "internal quality", which is the quality level of a code base as measured by how easy it is for /humans to change the code correctly/.
-
-Go read the post. It's good, I'll wait. Even if (like me) you don't always practice TDD!
-
-Once you've done that, you can come back to this post which is about our first round of "internal quality control" commits to the CalDance project now that it actually, you know, does something. /None/ of these commits alter the user experience or functionality of the code in any way.
-
-** Commit 1: central package management
-:PROPERTIES:
-:ID:       CECAB81B-D6E6-4DB3-8846-3CC5A16CF646
-:END:
-
-#+begin_quote
-[[https://gitlab.com/mavnn/caldance/-/commit/cdef80ad7bea6414357b99060b79d9f4b2cea9cf][Commit diff]]
-#+end_quote
-
-The first commit eliminates a surprisingly common source of bugs in a project: mismatched dependency versions between what you test, and what you deploy.
-
-To help combat this, in 2022 the NuGet introduced "[[https://devblogs.microsoft.com/nuget/introducing-central-package-management/][central package management]]" which is a mechanism to allow each of your project files to specify /which/ packages it depends on, while managing the versions of /all/ packages across your whole repository in one central location.
-
-Given that a new major version of Marten was released recently and I wanted to upgrade to use it, it seemed an ideal moment to put in a top level ~Directory.Packages.props~ file and remove the version numbers of dependencies from our ~fsproj~ files. An entire category of bugs eliminated permanently.
-
-The only code changes in this commit are to account for changes to how custom logging is implemented in Marten 7.0.
-
-** Commit 2: logging improvements
-:PROPERTIES:
-:ID:       C11B6D6E-2F82-48F9-B1DA-D68AF625089C
-:END:
-
-#+begin_quote
-[[https://gitlab.com/mavnn/caldance/-/commit/14e38a1343566381628179e973c2b47341107a91][Commit diff]]
-#+end_quote
-
-Talking about logging, our second commit enhances the logging we added to Marten to make sure that we carry through the ~RequestId~ assigned by AspNetCore to any Marten operations. We also add an environment variable switch to change over to structured JSON logging in our packaged docker container; this is considerably more verbose but means that we always know which component is logging and which request the log relates to when we start feeding the logs through to a log aggregator in production.
-
-** Commit 3: tests
-:PROPERTIES:
-:ID:       D724792B-12C1-4919-91BE-ED9773C58ACE
-:END:
-
-#+begin_quote
-[[https://gitlab.com/mavnn/caldance/-/commit/7072d5c5d77128da5330ec03df303ccf15f484d8][Commit diff]]
-#+end_quote
-
-I've been lax on testing so far, and the place where that bothered me most was that I wasn't completely certain that the type safe route definition library I'd built would actually construct links that would "round trip" correctly through the AspNetCore machinery.
-
-The idea is that I can define a route definition like so:
-
-#+begin_src fsharp
-  let private greetingRoute =
-    literalSection "/greetings/" ./+ stringSection "name"
-#+end_src
-
-And using that route definition I should be able to create links to an endpoint that receives any path parameters without them being changed.
-
-#+begin_src fsharp
-  // Any path I create with this function...
-  let link yourName = greetingRoute.link yourName
-
-  // ...should get handled by this endpoint, and
-  // ~greetingHandler~ should receive ~yourName~ as an input
-  let greetingEndpoint =
-    Handler.toEndpoint get greetingRoute greetingHandler
-#+end_src
-
-I wasn't sure how strings requiring URL escaping would be handled, so I added unit tests that actually call the underlying AspNet libraries to make sure I wasn't going to have any unpleasant surprises.
-
-It was a good thing I did, too, because the code did in fact do the wrong thing with strings that needed escaping. So this PR also includes the fixes.
-
-You can see the resulting test code in the new [[https://gitlab.com/mavnn/caldance/-/blob/DevJournal5/Server.Test/src/RouteDef.fs][RouteDef]] file in ~Server.Test~, which also shows just how easy it is to create a set of parameterized tests in Expecto.
-
-** Commit 4: standardize domain module setup
-:PROPERTIES:
-:ID:       E6339677-5056-4A35-82D3-1A6732ECE86B
-:END:
-
-#+begin_quote
-[[https://gitlab.com/mavnn/caldance/-/commit/f7cec1f8109d0f50ebdc0884c01b30706c137e94][Commit diff]]
-#+end_quote
-
-In the previous post I said that I was a bit unhappy with how much of its internals the user domain module was exposing, and maybe I should give a standard way of a domain context to define itself - but it would be premature to do so with only one context.
-
-Then I realized that in some ways I already had a couple of other contexts; the home page, which you could claim is a bit borderline to call a context, and the greetings functionality which allows you to greet somebody.
-
-In a way this is smoke and mirrors; I'm well aware that these are not really bounded contexts within a domain in the way that we mean when talking about domain driven design. But at the same time, the point of writing this sort of "hello world" code is precisely because it starts telling you enough about the system you're building to be able to start designing based on reality rather than a set of assumptions.
-
-Looking at the code in question, it became clear that one thing would definitely already be helpful: an interface defining what endpoints a domain context provides and what config it needed to add to Marten.
-
-That led to the ~DomainSetup~ module:
-
-#+begin_src fsharp
-  module Mavnn.CalDance.DomainSetup
-
-  open Falco
-  open Marten
-
-  type IConstructedContext =
-    abstract member endpoints: HttpEndpoint list
-    abstract member martenConfig: StoreOptions -> unit
-#+end_src
-
-A bit of rearranging later, and we now have three domain modules all which export a context class that both implements the interface above and is also a convenient place to expose any link builders that the module wants to expose. A lot of other code could then immediately become private to each module.
-
-** Wrapping up
-:PROPERTIES:
-:ID:       686EEEEC-81FE-4980-B3E6-D364130E52C4
-:END:
-
-If you're an F# developer (or interested in becoming one) I hope the details of the commits are helpful. But there's a bigger take away here: names don't just matter /in/ our code; talking to people with terminology that is easy for them to grasp and which highlights the areas of shared importance on all sides is an enormously valuable skill. You may well struggle to explain why you want to spend time refactoring ("you want to spend time making changes to the routing module that /don't/ change what the code does?"), but "we need to improve the internal quality of the routing module so that we can write new features more quickly and correctly" is probably much easier to get agreement about.
-
-I hope you're enjoying this journey of discovery with me - as always, if you have questions or comments all of the code is in the [[https://gitlab.com/mavnn/caldance][CalDance]] repository on GitLab. And if you'd like someone to help you keep the internal quality of *your* code base high then reach out about my [[file://../../../2024/01/29/short_term_help.org][short term consultancy]] services.
-
-Next time: [[file:../../../2024/03/19/dev_journal_6.org][starting to shape up our actual user interface]].
-
-** Footnotes
-:PROPERTIES:
-:ID:       D13098B7-34CD-46F6-8EED-AF0558906185
-:END:
-
-[fn:1] Yes, yes. I know it /does/ have a good definition. I'm just saying people don't use it very often, and it is actually quite hard to succinctly explain to someone who hasn't already got the context to know why you'd want to do such a thing.
-* Log in, log out: Dev Journal 4 (part 2)
-:PROPERTIES:
-:RSS_PERMALINK: 2024/03/05/dev_journal_4_2.html
-:PUBDATE: 2024-03-05
-:ID:       BA1B5860-E6BE-4074-B269-1E1465CBCA38
-:END:
-#+begin_quote
-This post is the second half of a two part update in the "Dev Journal" series. [[file:../../../2024/03/01/dev_journal_4.org][The first half]] talks about adding dependencies to the project on postgresql and the Marten event store library, which we'll look at using in this post. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
-#+end_quote
-
-So. We have an event store. Our website is going to have users. How do we go about user management?
-
-** Where's the cheese?
-:PROPERTIES:
-:ID:       69574665-9652-456A-93A4-AF66268594F3
-:END:
-
-To borrow a term from domain driven design, this sounds like a "bounded context" within our system. Other parts of the code may care about certain events happening related to users (users being created, that kind of thing), but they probably shouldn't know or care about how the internals of "a user" work or what it takes to authenticate a user.
-
-There are as many ways of organizing your code as there are grains of sand on the beach, but fundamentally all of the ones that help are about choosing where to have boundaries in your code base.
-
-We are going to have three horizontal slices; shared library code, domain logic (our "business" code), and execution environment. Vertically we're going to slice the domain logic by bounded context - of which, admittedly, we only have one at the moment.
-
-We end up with something like (things further down the table depend on the things above):
-
-+--------------------------------------------------+
-| Http Handler abstraction, UI components          |
-+-------------------+------------------------------+
-| User domain logic | Things users do domain logic |
-+-------------------+------------------------------+
-| Read configuration files, start the web server   |
-+--------------------------------------------------+
-
-You'll notice that this doesn't group the code by the technical task the code is trying to achieve, a pattern you'll often find in example project templates where you'll end up with a "Controllers" directory and a "Views" directory. It's also not an organization along "clean/hexagon/ports and adapters" lines with a strict demarcation between code that speaks to the outside world achieved via interfaces and abstractions.
-
-It's not that I feel that either of those patterns has no merit (although I feel like the main driver of the first pattern is that you can suggest it even for projects you /know nothing about/ which is a useful property when writing templates and dispensing nuggets of wisdom at conferences about the *one true way* to organize code). But I do feel that for the vast majority of code bases, it is a far bigger gain to productivity to be able to co-locate code by /purpose/ than by /type/.
-
-Let's face it: while you sometimes pick up a story/card/work ticket that requires you to go and change all the controllers (normally during dependency upgrades), or replace all the database interface implementations (you're about to have a long few months), it is much more likely on a day to day basis that you're trying to add a new field to the data we store about users, and you want to update the data store, business logic, and UI of /users/ to be able to do that. Taking this logic to its logical extremes leads you towards microservices - but that starts to bring in a different type of complexity of its own.
-
-All of this to say: there's now a folder called ~Domain~ which holds our new, shiny, user management code in a file called: /drumroll, please/ ~User.fs~. Let's have a look at it in detail.
-
-** The cheese. We have found it.
-:PROPERTIES:
-:ID:       F2D293B8-B656-4D73-8492-31F56234CD90
-:END:
-
-#+begin_src fsharp
-  module Mavnn.CalDance.Domain.User
-
-  open Falco
-  open Falco.Routing
-  open Falco.Markup
-  open Falco.Security
-  open Marten
-  open Marten.Events.Aggregation
-  open Marten.Events.Projections
-  open Mavnn.CalDance
-  open Mavnn.CalDance.Routing
-  open System.Security.Claims
-  open Microsoft.AspNetCore.Identity
-#+end_src
-
-As just mentioned, this module is going to be responsible for the whole vertical slice of the application for user management, so we start by including everything we need from the data store (~Marten~) through to the UI (~Falco.Markup~). We could have created sub modules within a Users folder if needed, but the module is only ~300 lines long so I haven't split it up (yet).
-
-#+begin_src fsharp
-  type User = { id: System.Guid; username: string }
-
-  type UserState =
-    | Active
-    | Disabled
-
-  [<CLIMutable>]
-  type UserRecord =
-    { Id: System.Guid
-      Username: string
-      PasswordHash: string
-      State: UserState }
-
-  type UserEvent =
-    | Created of UserRecord
-    | PasswordChanged of passwordHash: string
-    | Disabled
-#+end_src
-
-Next we define a few data types that represent our users, and the events that can happen to them over time. This is important because we are "event sourcing" the state of our users, meaning that the golden source of truth for what state a user is in is defined by what events have happened to them so far. The two representations of the user represent what we care about in the running system (the main ~User~ type) and what we need to store about them on disk (the ~UserRecord~ type); in general we would expect that other modules /might/ make use of the ~User~ type but in general they should not make use of the ~UserRecord~ type. Its an open question in my mind whether it should actually be marked as a private type declaration, but I've erred on the side of leaving it available for now.
-
-A minor implementation detail: to try and keep the incremental steps of the project manageable I'm using the default (de)serializers for Marten, which require the object to be deserialized from the data base has a default constructor and mutable fields, which we get from the ~[<CLIMutable>]~ attribute. We'll probably remove that going forwards by switching to a serialization strategy that works with immutable F# records.
-
-The life cycle of our users is very simple at the moment; a ~Created~ event signals that a new, active, user was created. That user can change their password, or they can be marked disabled which effectively ends the lifecycle of the user. There's no way to reactivate a user now, although we could always add one later.
-
-#+begin_src fsharp
-  type UserRecordProjection() =
-    inherit SingleStreamProjection<UserRecord>()
-
-    member _.Create(userEvent, metadata: Events.IEvent) =
-      match userEvent with
-      | Created user -> user
-      | _ ->
-        // We should always receive a created event
-        // first so this shouldn't ever happen...
-        // ...but it might, and we don't want to throw
-        // in projections.
-        { Id = metadata.Id
-          Username = ""
-          PasswordHash = ""
-          State = UserState.Disabled }
-
-
-    member _.Apply(userEvent, userRecord: UserRecord) =
-      task {
-
-        match userEvent with
-        | Created _ ->
-          // Should never occur after the first event in the stream
-          // so we ignore duplicates
-          return userRecord
-        | PasswordChanged passwordHash ->
-          match userRecord with
-          | { State = UserState.Disabled } ->
-            // Don't update password of disabled users
-            return userRecord
-          | user ->
-            return
-              { user with
-                  PasswordHash = passwordHash }
-        | Disabled ->
-          match userRecord with
-          | { State = UserState.Disabled } ->
-            return userRecord
-          | { State = Active } ->
-            return
-              { userRecord with
-                  State = UserState.Disabled }
-      }
-#+end_src
-
-~Marten~ leans heavily into the code reflection capabilities of the dotnet framework, allowing us to configure our data store in terms of the in program types we want it to store. A "projection" in event sourcing is the logic which takes a list of events (our base line source of truth) and turns it into a current state, so this class defines a projection that will create and/or update ~UserRecord~ data in Marten's document store (we know it does this because it implements the ~SingleStreamProjection<UserRecord>~ interface). It will project /from/ events of the ~UserEvent~ type, because that is the type of the first argument of the ~Create~ and ~Apply~ methods we have supplied.
-
-There are a few conventions we need to follow here to allow for this minimalist a configuration. Our current state type /must/ have an ~Id~ (or ~id~) field of type string, uuid, or integer. And when an event matching the signature of our projection is pushed to a stream with an ID, the resulting update to the current status type must produce a document with the same ID as the stream ID.
-
-We're treating our records as immutable objects (because we're planning to make them immutable going forward), so our create and apply methods return a ~Task<UserRecord>~; if the document type was mutable we would also have the options of mutating it in place and returning void.
-
-With that explanation out of the way, hopefully the state machine that represents our user life cycle is clear in the code above.
-
-Now that we can store information about our users, and update them based on what is happening to them, it's time to start implementing the actual responsibilities of the module. We're keeping things minimal to get started, so we'll implement only the three things we /really/ need: sign up, log in, and log out.
-
-#+begin_src fsharp
-  type LoginFormData = { username: string; password: string }
-
-  let findUserRecord (username: string) =
-    Marten.withMarten (fun marten ->
-      marten
-        .Query<UserRecord>()
-        .SingleOrDefaultAsync(fun ur ->
-          ur.Username = username))
-    |> Handler.map Marten.returnOption
-
-  let loginRoute = RouteDef.literalSection "/login"
-  let logoutRoute = RouteDef.literalSection "/logout"
-  let signupRoute = RouteDef.literalSection "/signup"
-
-  let getSessionUser: Handler<User option> =
-    Handler.fromCtx (fun ctx ->
-      match ctx.User with
-      | null -> None
-      | principal ->
-        match
-          (System.Guid.TryParse(
-            principal.FindFirstValue("userId")
-           ),
-           principal.FindFirstValue("name"))
-        with
-        | ((false, _), _)
-        | (_, null) -> None
-        | ((true, id), username) ->
-          Some { id = id; username = username })
-#+end_src
-
-A few definitions and helpers start us off; what data a form needs to capture for someone to sign up/log on, what urls exist and are managed by this module, and a couple of helper functions for obtaining a user record and a user session from the current HTTP context (using the ~Handler~ type we talked about in the last post).
-
-#+begin_src fsharp
-  let loginGetEndpoint =
-    Handler.toEndpoint get loginRoute (fun () ->
-      Handler.return' (
-        Response.ofHtmlCsrf (fun csrfToken ->
-          Elem.html
-            []
-            [ Elem.body
-                []
-                [ Elem.form
-                    [ Attr.method "post" ]
-                    [ Elem.input [ Attr.name "username" ]
-                      Elem.input [ Attr.name "password" ]
-                      Xss.antiforgeryInput csrfToken
-                      Elem.input
-                        [ Attr.type' "submit"
-                          Attr.value "Submit" ] ] ] ])
-      ))
-#+end_src
-
-Our first end point is straight forward. When we receive a get request to the login path, we reply with a form containing a token to prevent cross site vulnerabilities and username and password fields.
-
-#+begin_src fsharp
-  let private makePrincipal userRecord =
-    let claims =
-      [ new Claim("name", userRecord.Username)
-        new Claim("userId", userRecord.Id.ToString()) ]
-
-    let identity = new ClaimsIdentity(claims, "Cookies")
-
-    new ClaimsPrincipal(identity)
-
-  let passwordHasher = PasswordHasher()
-
-  let updateUser (id: System.Guid, events: seq<UserEvent>) =
-    handler {
-      do!
-        Marten.withMarten (fun marten ->
-          task {
-            // explicitly assign this as an array of objects
-            // so that Marten chooses the correct method
-            // overload for `Append`
-            let eventObjs: obj[] =
-              Array.ofSeq events |> Array.map box
-
-            marten.Events.Append(id, eventObjs) |> ignore
-            return! marten.SaveChangesAsync()
-          })
-
-      return!
-        Marten.withMarten (fun marten ->
-          marten.LoadAsync<UserRecord>(id))
-    }
-#+end_src
-
-Our next end point is going to actually handle the form coming in, so it requires a few more helpers. The web framework we're using will handle things like sessions for us, but only if we "buy into" the .NET standard ways of representing a user, in this case using the ~ClaimsPrincipal~ type - so we have a helper to map from one of our user records to a claims principal. We initialize a password hasher which will salt and hash our passwords for us (don't roll your own crypto, folks, especially when your language ecosystem has a decent implementation ready for you). And finally we add an other method that works within our HTTP context expressions - ~updateUser~ takes the ID of a user and a list of events and returns the updated ~UserRecord~.
-
-With all of that in place, we can write the ~loginPostEndpoint~.
-
-#+begin_src fsharp
-  let loginPostEndpoint =
-    Handler.toEndpoint post loginRoute (fun () ->
-      handler {
-        let! loginData =
-          Handler.formDataOrFail
-            (Response.withStatusCode 400 >> Response.ofEmpty)
-            (fun f ->
-              Option.map2
-                (fun username password ->
-                  { username = username
-                    password = password })
-                (f.TryGetStringNonEmpty "username")
-                (f.TryGetStringNonEmpty "password"))
-
-        let! userRecord =
-          findUserRecord loginData.username
-          |> Handler.ofOption (
-            Response.withStatusCode 403 >> Response.ofEmpty
-          )
-
-        let verificationResult =
-          passwordHasher.VerifyHashedPassword(
-            userRecord,
-            userRecord.PasswordHash,
-            loginData.password
-          )
-
-        match verificationResult with
-        | PasswordVerificationResult.Failed ->
-          return
-            (Response.withStatusCode 403 >> Response.ofEmpty)
-        | PasswordVerificationResult.Success ->
-          return
-            Response.signInAndRedirect
-              "Cookies"
-              (makePrincipal userRecord)
-              "/"
-        | PasswordVerificationResult.SuccessRehashNeeded ->
-          let! _ =
-            updateUser (
-              userRecord.Id,
-              [ PasswordChanged(
-                  passwordHasher.HashPassword(
-                    userRecord,
-                    loginData.password
-                  )
-                ) ]
-            )
-
-          return
-            Response.signInAndRedirect
-              "Cookies"
-              (makePrincipal userRecord)
-              "/"
-        | _ ->
-          return
-            failwithf
-              "Unknown password verification result type %O"
-              verificationResult
-
-      })
-#+end_src
-
-Time to actually use our ~handler~ expression in earnest! There is some personal preference in play here, but personally I really like the clear flow of the request we can see happening in this code. We either have the form data we need, or we return a ~400~ error. Then we either find a user record with a matching username, or we return a ~403~ error (we don't want to reveal whether a username exists or not, so we return the same code as for when the password is incorrect; security +1, helpful error messages to users -1). Then we check the password, and we either return ~403~ (if it is wrong) or log you in if it is correct. A minor piece of extra complexity is introduced by the fact that the password hasher may signal that the password is correct but the /hash/ needs updating in storage, a background operation that the user does not need to know about.
-
-I'll leave the other end points for the reader to read at their leisure [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][on Gitlab]], as they are either trivial (~logoutEndpoint~) or very similar to the log in end points (~signupGetEndpoint~ and ~signupPostEndpoint~).
-
-Finally, we get to the end of the module where we export everything that the web server setup code (the bottom layer in my newly christened "julienned domain sandwich" architecture).
-
-#+begin_src fsharp
-  let endpoints =
-    [ loginGetEndpoint
-      loginPostEndpoint
-      logoutEndpoint
-      signupGetEndpoint
-      signupPostEndpoint ]
-
-  let martenConfig (storeOptions: Marten.StoreOptions) =
-    storeOptions.Projections.Add<UserRecordProjection>(
-      ProjectionLifecycle.Inline
-    )
-#+end_src
-
-At the moment, with only one domain, this is just an adhoc export of the end points we're wanting to add to the webserver and the projections we want to add to ~Marten~. As the project grows, we'll probably add an interface that each of our domain modules will export which will provide to allow a standardized process for consuming the needed configuration. But there's little point trying to proactively create an abstraction over a single example of a pattern.
-
-And there you have it; event sourced (basic) user management for our web application. If you have thoughts and questions, drop them as an issue on the [[https://gitlab.com/mavnn/caldance/-/blob/e62126228d63e77834112a193fcb0396f4410bc5/Server/src/Domain/User.fs][CalDance repository]]. I'd love to see example repositories having in depth discussions of when the architecture they suggest is or isn't useful, even if (especially if!) that discussion includes comments critical of the architecture demonstrated.
-
-Next up: [[file:../../../2024/03/09/dev_journal_5.org][a round of internal quality control]].
-* Foundations: Dev Journal 1
-:PROPERTIES:
-:RSS_PERMALINK: 2024/01/31/dev-journal-1.html
-:PUBDATE: 2024-01-31
-:ID:       6EE36177-A692-4D2B-B949-B2785801C8C9
-:END:
-This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
-
-On the one hand this is a personal project. On the other, I'd like to take advantage of nice things like CI/CD, testing, etc, even when I'm working on something for myself. So this is also a mini-tour of many of the things I would do setting up a new greenfield project for a team.
-
-As the series progresses, I'll carry on adding the sections here.
-
-*The series so far*
-
-** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
-:PROPERTIES:
-:ID:       8090832E-B394-452D-B10D-B1A192A339FF
-:END:
-** [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
-:PROPERTIES:
-:ID:       B2F254A9-7259-4009-A41A-48F234F04352
-:END:
-** [[file:../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
-:PROPERTIES:
-:ID:       3DA51655-06CF-4BD7-82C7-F31C3FAF471F
-:END:
-** [[file:../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
-:PROPERTIES:
-:ID:       3CDE3F5A-DF6E-4910-9AF1-1D3B1338240B
-:END:
-** [[file:../../../2024/03/09/dev_journal_5.org][Internal quality review]]: making it easier to make correct changes to our code
-:PROPERTIES:
-:ID:       81CF6171-C984-4268-879A-262B59B5E251
-:END:
-** [[file:../../../2024/03/19/dev_journal_6.org][With style]]: Adding style and interactivity with server side HTML
-:PROPERTIES:
-:ID:       3F36940C-A2ED-4899-92E7-5E2598BAF2BD
-:END:
-
-** Part 1: Foundations
-:PROPERTIES:
-:ID:       DCB804AB-3A9C-49DA-993F-273E9479B485
-:END:
-
-Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
-
-On the things I'd like to try front, we have:
-
-** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
-:PROPERTIES:
-:ID:       0A46D6A7-EF81-4B7D-99D3-40EE4962144F
-:END:
-** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
-:PROPERTIES:
-:ID:       DFC0F6C1-CA27-41FC-BEC5-C072D935A833
-:END:
-
-On the technologies I've used before and found useful front, we have:
-
-** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
-:PROPERTIES:
-:ID:       6A9EAC8C-BBE2-4711-B446-120EDBBF1507
-:END:
-** [[https://direnv.net/][direnv]] for seamless local development environments.
-:PROPERTIES:
-:ID:       06838C30-B5C9-4BEF-8C55-B4F9A74767B6
-:END:
-** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
-:PROPERTIES:
-:ID:       8ABD06DC-9674-492A-8227-83BEEEE74F3F
-:END:
-** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
-:PROPERTIES:
-:ID:       580F37E6-8452-4323-B21E-78C6EE0E03AE
-:END:
-
-I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
-
-For today, let's start with a /minimum deployable product/: a "Hello world" Falco server with CI/CD pipeline in place. We'll have a gitlab hosted project anybody with a working nix environment can pull down and:
-
-** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
-:PROPERTIES:
-:ID:       9FBF4B92-07D8-484F-8776-D8A2D330628E
-:END:
-** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
-:PROPERTIES:
-:ID:       B668B364-F96A-4D9C-AC21-18CA65A166D5
-:END:
-** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
-:PROPERTIES:
-:ID:       1E2EB494-7A5C-4878-B49B-6B4ECA34D235
-:END:
-
-Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
-
-*** Setup a nix flake to provide our environment
-:PROPERTIES:
-:ID:       9257FA4D-DC7A-489D-AECD-E1E211417856
-:END:
-
-A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
-
-#+begin_src nix
-  # Tools we want available during development
-  devShells.default = pkgs.mkShell {
-    buildInputs = [ dnc.sdk_8_0 pkgs.nixfmt pkgs.skopeo ];
-  };
-
-  # Default result of running `nix build` with this
-  # flake; it builds the F# project `CalDance.fsproj`
-  packages.default = pkgs.buildDotnetModule {
-    pname = name;
-    version = "0.1";
-
-    src = ./.;
-    projectFile = "CalDance.fsproj";
-    nugetDeps = nugets;
-
-    # We set nix to create an output that contains
-    # everything needed, rather than depending
-    # on the dotnet runtime
-    selfContainedBuild = true;
-
-    # This is a webserver, and it complains if it
-    # has no access to openssl
-    runtimeDeps = [ pkgs.openssl pkgs.cacert ];
-
-    dotnet-sdk = dnc.sdk_8_0;
-    dotnet-runtime = dnc.runtime_8_0;
-    executables = [ "CalDance" ];
-  };
-
-  # A target that builds a fully self-contained docker
-  # file with the project above
-  packages.dockerImage = pkgs.dockerTools.buildImage {
-    name = name;
-    config = {
-      # asp.net likes a writable /tmp directory
-      Cmd = pkgs.writeShellScript "runServer" ''
-        ${pkgs.coreutils}/bin/mkdir -p /tmp
-        ${pkgs.coreutils}/bin/mount -t tmpfs tmp /tmp
-        ${packages.default}/bin/CalDance.Server
-      '';
-      Env =
-        [ "DOTNET_EnableDiagnostics=0" "ASPNETCORE_URLS=http://+:5001" ];
-      ExposedPorts = { "5001/tcp" = { }; };
-    };
-  };
-#+end_src
-
-First we say we want a shell environment which includes the dotnet core SDK (version 8), nixfmt (for formatting nix files), and skopeo which we can use for moving docker images around.
-
-Then we define the default output for this flake: it uses the ~buildDotnetModule~ to specify that in our case it should build the executable ~CalDance~ based on the F# project file ~CalDance.fsproj~. A helper makes sure that Nix is aware of which nuget packages the project has referenced, so that they can be packaged correctly.
-
-Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ helper to say we want to be able to build a docker image that contains the executable from the default package above, everything it needs to run and /nothing else at all/. In our case, this produces a docker image weighing in at around 80MB - similar to what you'd get optimising a [[https://blogit.create.pt/telmorodrigues/2022/03/08/smaller-net-6-docker-images/][two step hand crafted dockerfile]], and significantly smaller than using the official [[https://hub.docker.com/_/microsoft-dotnet-aspnet/][Microsoft ASP.NET runtime image]].
-
-*** direnv
-:PROPERTIES:
-:ID:       89E8AFFC-04D3-4CC0-969B-80AC28AD427B
-:END:
-
-Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
-
-We add a ~.envrc~ file to our project with the contents:
-
-#+begin_src bash
-  #!/usr/bin/env bash
-  # the shebang is ignored, but nice for editors
-  use flake
-#+end_src
-
-Next time we move into this directory, direnv will ask us to allow this ~.envrc~ file. If we accept, our normal local shell will have everything specified in the ~devShell~ above added to its path. This means we can, for example, use the ~dotnet~ command and we will use the version specified in ~flake.nix~ even if we haven't installed a system wide version of dotnet at all.
-
-*** The F# project
-:PROPERTIES:
-:ID:       93CD52A9-654A-4694-B302-D5260AA8403E
-:END:
-
-There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
-
-Replace the contents of ~Program.fs~ with:
-
-#+begin_src fsharp
-  module Mavnn.CalDance.Server
-
-  open Falco
-  open Falco.Routing
-  open Falco.HostBuilder
-
-  webHost [||] {
-      endpoints [
-          get "/" (Response.ofPlainText "Hello World")
-      ]
+This code is spiritually the same as writing:
+
+#+begin_src typescript
+  const helloAsync = async (name?: string): Promise<string> => {
+    return `Hello, ${name || "world"}!`
   }
 #+end_src
 
-*** Set up the CI pipeline
-:PROPERTIES:
-:ID:       DC576C53-C805-4269-8136-DFC05B22AC3D
-:END:
+You can think of the ~Effect.gen(function* () { ... })~ as a slightly more verbose version of the ~async~ prefix to a function.
 
-Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
+What about calling the function? Again, we have a similar concept but different syntax to ~async/await~.
 
-There's a little bit of boilerplate to tell nix that we want to allow flakes and to allow connection to the gitlab package registry. Once that is done, we log into the registry for this project using the CI provided environment variables, run ~nix build .#dockerImage~ and then push the results up to the registry.
+#+begin_src typescript
+  // Effect version
+  const sayHello: Effect.Effect<void> =
+    Effect.gen(function* () {
+      const greeting = yield* hello("world")
+      yield* sendGreetings(greeting)
+    })
 
-#+begin_src yaml
-  build-container:
-    image:
-      name: "nixos/nix:2.19.3"
-    variables:
-      IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    before_script:
-      - nix-env --install --attr nixpkgs.skopeo
-    script:
-      - mkdir -p "$HOME/.config/nix"
-      - echo 'experimental-features = nix-command flakes' > "$HOME/.config/nix/nix.conf"
-      - mkdir -p "/etc/containers/"
-      - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
-      - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-      - 'nix build .#dockerImage'
-      - ls -lh ./result
-      - 'skopeo inspect docker-archive://$(readlink -f ./result)'
-      - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
+  // Async/await version
+  const sayHelloAsync: Promise<void> = {
+    const greeting = await helloAsync("world")
+    await sendGreetingsAsync(greeting)
+  }
 #+end_src
 
-It's worth noting here that Nix is a deterministic build system (for example, stripping dates from compiled metadata so building the same source code on a different day doesn't product a different binary). In a "real life" context I would be caching the results of the nix build steps to a service like [[https://www.cachix.org/][Cachix]] so that they could be reused between builds, which becomes increasingly useful as the project grows and starts to be comprised of multiple build steps (Nix will be able to cache each "step" individually, even if you only ask for the final outcome of the process).
+Given that we're using a cooperative scheduling system for asynchronous code, you can think of ~yield*~ as
+saying "hey runtime - I'm yielding the thread now, start me back up when the effect on the right has finished."
 
-*** Wrapping it all up
+There is, however one big difference between these two which will catch you out if you don't know about it.
+
+** Hot and cold promises
 :PROPERTIES:
-:ID:       68EA3F34-268D-4998-9986-1903D252F0A7
+:ID:       270C3B72-6CC8-44C1-88F0-F961C6CE956B
 :END:
 
-Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
+~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
 
-As a bonus extra, anybody with nix installed can build and run the project without having to know .NET or have any .NET tooling installed; a very nice feature when you have others depending on your work who might want to run your code locally, but may not have chosen the same tech stack.
+Well, in the example above ~sayHelloAsync~ is a constant value. As soon as the value is created, the logic within
+the promise will be scheduled for execution and we will start the process of asynchronously running the ~helloAsync~
+function. If we await the result of ~sayHelloAsync~ somewhere else, we will block until the function has finished.
 
-*** Feedback? Comments?
+This also means that if we ~await~ ~sayHelloAsync~ in two different places, we will only send greetings *once*. After
+all, the ~Promise~ type that we are handing around represents the running execution of an asynchronous process; it has
+already started, and awaiting it multiple times won't start it again.
+
+~Effect~, by contrast, is a "cold" or "thunked" asynchronous construct. It represents a series of steps that /will be/
+executed /if/ the result is requested.
+
+So if we run:
+
+#+begin_src typescript
+  const camelot: Effect.Effect<void> =
+    Effect.gen(function* () {
+      yield* sayHello
+      yield* sayHello
+      yield* sayHello
+    })
+#+end_src
+
+We will send the greetings three times, but only when somebody requests the result of running ~camelot~. Until
+then, nothing will happen at all.
+
+*If you remember nothing else from this post*, remember that an ~Effect~ that nobody executes never runs. This /will/ catch you
+out with logging.
+
+#+begin_src typescript
+  // logs nothing
+  const camelot: Effect.Effect<void> =
+    Effect.gen(function* () {
+      Effect.log("Bass voice: spam a looooooot")
+      yield* sayHello
+      yield* sayHello
+      yield* sayHello
+    })
+
+  // logs the bass voice
+  const camelot: Effect.Effect<void> =
+    Effect.gen(function* () {
+      yield* Effect.log("Bass voice: spam a looooooot")
+      yield* sayHello
+      yield* sayHello
+      yield* sayHello
+    })
+#+end_src
+
+Although the ability to create Effects without executing them can be extremely useful, leaving ~yield*~ out of
+your code when you actually need it is probably the most frustrating element of learning Effect, and the one
+that the compiler is least able to warn you about.
+
+** Pipes
 :PROPERTIES:
-:ID:       29C1D0D7-D731-4CFF-9A2E-D53714D9DC7E
+:ID:       E45EB858-A59C-4C6C-88A9-B6D328192014
 :END:
 
-Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
+Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.
 
-*** Next
-:PROPERTIES:
-:ID:       D9C69D04-0E5A-4913-ADB1-42C6A4EA8A8C
-:END:
+The main place you'll see this is that we can wrap ~Effect~ values in a wide variety of ways. These are very powerful,
+but quickly start suffering from the "lisp effect" of a pyramid of brackets when we start combining them.
 
-[[file:../../../2024/02/06/dev-journal-2.org][Part 2]] adds unit tests and consistent formatting to the project.
+Let's rewrite the ~camelot~ function above using the built in ~Effect.repeatN~ method:
+

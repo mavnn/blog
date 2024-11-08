@@ -3,6 +3,14 @@
 :END:
 #+TITLE: Do notation for TypeScript
 
+#+begin_quote
+This post is still here as an interesting deep dive into the mechanics of using TypeScript's type system, but
+if what you're really looking for is a production ready async/result/state monad for TypeScript I'd strongly
+recommend the Effect TS library rather than rolling your own - now I know it exists.
+
+I've written a brief introduction here: [[file:../../../2024/09/16/intro_to_effect_ts.org][A gentle introduction to Effect TS]].
+#+end_quote
+
 This is rather an aside from recent blog posts, but something I found interesting none the less.
 
 Fair warning to start us off: this post assumes that you are aware of and understand "do notation" (or "computational expressions" or "monad syntax") and like the idea of having it available in TypeScript.

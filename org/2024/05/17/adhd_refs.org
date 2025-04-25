@@ -3,9 +3,7 @@
 :END:
 #+TITLE: Types et al as accessibility tools for the ADHD brain
 
-I ended up with a fair number of references for my talks at [[https://www.youtube.com/watch?v=vd1-rAIYV6I][Software You Can Love]] and LambdaDays 2024 on how I use various tools and techniques to compensate for my late diagnosed ADHD.
-
-I'll update the page a link to the Lambda Days recording once it exists (the two versions share slides but have slightly different focus on where I spend the time).
+I ended up with a fair number of references for my talks at [[https://www.youtube.com/watch?v=vd1-rAIYV6I][Software You Can Love]] and [[https://www.youtube.com/watch?v=DG5gLPFKcbk][LambdaDays 2024]] on how I use various tools and techniques to compensate for my late diagnosed ADHD. The two talks are based off the same outline and slides, although the speaker having ADHD the content does vary a bit between them...
 
 Now, the list of links!
 

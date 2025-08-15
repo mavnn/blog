@@ -1,0 +1,37 @@
+:PROPERTIES:
+:ID:       0C23E268-F37F-4C6C-8E38-F04C03486EED
+:END:
+#+TITLE: Conflict free syncthing notes
+
+Just a short trick this time, mostly for my own records. As a family we've started moving to Syncthing for syncing files across devices, and "open" note taking formats like ".org" and ".md" for long term note taking. I've been using org-mode for a while personally, and now the rest of the family have been burned enough by the alternatives over the years that they're coming to similar conclusions even if not all of them want to use Emacs!
+
+Syncthing has a sensible general purpose policy with conflicts of creating a copy of a file where a conflict exists with a ~.sync-conflict-<date>-<time>-<device-id>.~ pseudo-extension added before the files true extension (or to the end of the filename if it didn't have one).
+
+In general, this is great as it means that a) all in sync devices have a shared understanding of the "winning" version of the file, and b) you can manually do any comparisons you need to and by saving a new version of the "original" file name and deleting the conflicting copies you resolve the conflict for everybody.
+
+But with plain text note files, we can actually do a bit better than that. Because these files are always text, we can use a standard merge algorithm on them. And because the places where conflicts happen most are (almost by definition) things like todo lists and similar, we can even go a step further and specify that even if there is a line/word level conflict that the algorithm can't resolve, we can allow the resolution to be "just in line the changes from both sides."
+
+So there's now a cron job running on the Raspberry Pi that acts as our "introducer" node in our Syncthing mesh, which looks like this:
+
+#+BEGIN_SRC bash
+  #!/usr/bin/env bash
+  # Find all files that are syncthing conflict markers, and have a "note" extension (md or txt or org)
+  readarray -t CONFLICTS < <( find /syncthing/share/parent/directory -type f -name "*.sync-conflict*" \( -name "*.md" -o -name "*.org" -o -name "*.txt" \) )
+  # For each file:
+  for CONFLICT in "${CONFLICTS[@]}";
+  do
+     # Find the "winning" version with the original file name
+     CHOSEN="$(echo "$CONFLICT" | sed -n "s/\(.*\)sync-conflict-[[:digit:]]\{8\}-[[:digit:]]\{6\}-[A-Z0-9]\{7\}.\(.*\)/\1\2/p" )"
+     echo Merging "$CHOSEN" "$CONFLICT"
+     # If the original file actually exists (nothing stops a user from deleting it)
+     if [ -f "$CHOSEN" ]; then
+       # Merge the two versions of the file, taking from both in case of conflict; this may cause repetition but
+       # won't lose data. Delete the conflict file but only if the merge reported no errors.
+       git merge-file --union "$CHOSEN" "/syncthing/share/parent/directory/empty_file" "$CONFLICT" && rm "$CONFLICT"
+     else
+       echo "No current file found"
+     fi
+  done
+#+END_SRC
+
+The only slight gotcha is you'll need to run ~touch /syncthing/share/parent/directory/empty_file~ to create an empty file to be used as the "parent" of the two conflicting versions. Extra internet points available to anyone who instead works out how to use a historical version from syncthing's archive functionality, but for me on this occasion that wasn't really needed.

@@ -1,10 +1,71 @@
 #+TITLE: Mavnn's blog
 
+* Conflict free syncthing notes
+:PROPERTIES:
+:RSS_PERMALINK: 2025/08/15/conflict_free_syncthing_notes.html
+:PUBDATE: 2025-08-15
+:ID:       F09A981C-2633-47EE-B3E8-1213B619AAC1
+:END:
+:PROPERTIES:
+:ID:       0C23E268-F37F-4C6C-8E38-F04C03486EED
+:END:
+Just a short trick this time, mostly for my own records. As a family we've started moving to Syncthing for syncing files across devices, and "open" note taking formats like ".org" and ".md" for long term note taking. I've been using org-mode for a while personally, and now the rest of the family have been burned enough by the alternatives over the years that they're coming to similar conclusions even if not all of them want to use Emacs!
+
+Syncthing has a sensible general purpose policy with conflicts of creating a copy of a file where a conflict exists with a ~.sync-conflict-<date>-<time>-<device-id>.~ pseudo-extension added before the files true extension (or to the end of the filename if it didn't have one).
+
+In general, this is great as it means that a) all in sync devices have a shared understanding of the "winning" version of the file, and b) you can manually do any comparisons you need to and by saving a new version of the "original" file name and deleting the conflicting copies you resolve the conflict for everybody.
+
+But with plain text note files, we can actually do a bit better than that. Because these files are always text, we can use a standard merge algorithm on them. And because the places where conflicts happen most are (almost by definition) things like todo lists and similar, we can even go a step further and specify that even if there is a line/word level conflict that the algorithm can't resolve, we can allow the resolution to be "just in line the changes from both sides."
+
+So there's now a cron job running on the Raspberry Pi that acts as our "introducer" node in our Syncthing mesh, which looks like this:
+
+#+begin_src bash
+  #!/usr/bin/env bash
+  # Find all files that are syncthing conflict markers, and have
+  # a "note" extension (md or txt or org)
+  readarray -t CONFLICTS < <( \
+    find /syncthing/share/parent/directory -type f \
+         -name "*.sync-conflict*" \
+         \( -name "*.md" -o -name "*.org" -o -name "*.txt" \) \
+  )
+  # For each file:
+  for CONFLICT in "${CONFLICTS[@]}";
+  do
+     # Build the regex for matching conflict files and extracting
+     # the original file name.
+     # 1. The marker, capturing the file name in a group.
+     REG="\(.*\)sync-conflict-"
+     # 2. The date
+     REG+="[[:digit:]]\{8\}-"
+     # 3. The time
+     REG+="[[:digit:]]\{6\}-"
+     # 4. The originating device ID
+     REG+="-[A-Z0-9]\{7\}"
+     # 5. The original file extension
+     REG+=".\(.*\)"
+     # Find the "winning" version with the original file name
+     CHOSEN="$(echo "$CONFLICT" | sed -n "s/${REG}/\1\2/p" )"
+     echo Merging "$CHOSEN" "$CONFLICT"
+     # If the original file actually exists (nothing stops a user from deleting it)
+     if [ -f "$CHOSEN" ]; then
+       # Merge the two versions of the file, taking from both in case of conflict;
+       # this may cause repetition but won't lose data. Delete the conflict file
+       # but only if the merge reported no errors.
+       git merge-file --union \
+           "$CHOSEN" "/syncthing/share/parent/directory/empty_file" \
+           "$CONFLICT" && rm "$CONFLICT"
+     else
+       echo "No current file found"
+     fi
+  done
+#+end_src
+
+The only slight gotcha is you'll need to run ~touch /syncthing/share/parent/directory/empty_file~ to create an empty file to be used as the "parent" of the two conflicting versions. Extra internet points available to anyone who instead works out how to use a historical version from syncthing's archive functionality, but for me on this occasion that wasn't really needed.
 * Types et al as accessibility tools for the ADHD brain
 :PROPERTIES:
 :RSS_PERMALINK: 2024/05/17/adhd_refs.html
 :PUBDATE: 2024-05-17
-:ID:       139965AD-CAD7-433F-BB5A-686A886D6D40
+:ID:       9AD8D4A3-CE86-492A-96E5-FED3590ACE89
 :END:
 :PROPERTIES:
 :ID:       16B63501-8C0C-4F3A-82FA-5EE453BBBBC7
@@ -15,7 +76,7 @@ Now, the list of links!
 
 ** About ADHD
 :PROPERTIES:
-:ID:       7D9DE119-23F9-4A45-B541-52DACF9F0B15
+:ID:       3E10E6B3-96E4-4CA3-9195-E8FB77D6EA37
 :END:
 
 "How to ADHD" has lots of material on what ADHD is, how it manifests, and what you can do about it: https://howtoadhd.com/
@@ -30,7 +91,7 @@ Finally, I mentioned at one point an organization tool that happens to mesh fair
 
 ** Evidence (or not) of my favourite programming techniques being better
 :PROPERTIES:
-:ID:       1A46A656-CD42-4CB9-868B-3882B58201D1
+:ID:       2F8EA028-8A8B-4FB8-B893-EBE3AA4ABE2E
 :END:
 
 Dan Luu's tour de force review of research into whether or not strong typing leads to more reliable code: https://danluu.com/empirical-pl/
@@ -41,7 +102,7 @@ The arguments I've heard against domain driven design have tended to be more ane
 
 ** Going deeper on Property Based Testing
 :PROPERTIES:
-:ID:       AFD54626-D0A7-4AE6-BF2E-39F5B1665763
+:ID:       C111C902-C18A-4493-B185-8BB270696DF4
 :END:
 
 I happen to be a fan of Scott Wlaschin's video and blog posts at https://fsharpforfunandprofit.com/pbt/ titled "The lazy programmer's guide to writing 1000's of tests".
@@ -52,14 +113,14 @@ Fuzz testing is a related topic which somewhat overlaps, but with a different fo
 
 ** Leaning into union types, and domain driven design
 :PROPERTIES:
-:ID:       D025B476-C026-4238-8F5F-9EF555BD920C
+:ID:       F0DF1C64-9EDC-4D2B-BA5F-0F565C401ED6
 :END:
 
 I cannot over stress how amazing a book "Domain Modeling Made Functional" is (again, by Scott Wlaschin) https://pragprog.com/titles/swdddf/domain-modeling-made-functional/. There is also a talk covering the basics available at https://www.youtube.com/watch?v=MlPQ0FsPxPY.
 
 ** Pushing the boundaries on types
 :PROPERTIES:
-:ID:       4B738CE0-DA6A-46CE-9237-8446A8BDE9A8
+:ID:       BFE137AB-83CE-425E-869B-CF6DAB892B38
 :END:
 
 Probably the place to start is the Idris programming language https://www.idris-lang.org/
@@ -67,7 +128,7 @@ Probably the place to start is the Idris programming language https://www.idris-
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/29/short_term_help.html
 :PUBDATE: 2024-01-29
-:ID:       A4CDFA48-6BB3-4861-A58A-4B78ACDF3937
+:ID:       C8CEA324-3907-46DD-B58E-1E115317A58B
 :END:
 :PROPERTIES:
 :ID:       13C93632-F856-4CE5-A937-12C264E40684

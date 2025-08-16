@@ -15,19 +15,39 @@ So there's now a cron job running on the Raspberry Pi that acts as our "introduc
 
 #+BEGIN_SRC bash
   #!/usr/bin/env bash
-  # Find all files that are syncthing conflict markers, and have a "note" extension (md or txt or org)
-  readarray -t CONFLICTS < <( find /syncthing/share/parent/directory -type f -name "*.sync-conflict*" \( -name "*.md" -o -name "*.org" -o -name "*.txt" \) )
+  # Find all files that are syncthing conflict markers, and have
+  # a "note" extension (md or txt or org)
+  readarray -t CONFLICTS < <( \
+    find /syncthing/share/parent/directory -type f \
+         -name "*.sync-conflict*" \
+         \( -name "*.md" -o -name "*.org" -o -name "*.txt" \) \
+  )
   # For each file:
   for CONFLICT in "${CONFLICTS[@]}";
   do
+     # Build the regex for matching conflict files and extracting
+     # the original file name.
+     # 1. The marker, capturing the file name in a group.
+     REG="\(.*\)sync-conflict-"
+     # 2. The date
+     REG+="[[:digit:]]\{8\}-"
+     # 3. The time
+     REG+="[[:digit:]]\{6\}-"
+     # 4. The originating device ID
+     REG+="-[A-Z0-9]\{7\}"
+     # 5. The original file extension
+     REG+=".\(.*\)"
      # Find the "winning" version with the original file name
-     CHOSEN="$(echo "$CONFLICT" | sed -n "s/\(.*\)sync-conflict-[[:digit:]]\{8\}-[[:digit:]]\{6\}-[A-Z0-9]\{7\}.\(.*\)/\1\2/p" )"
+     CHOSEN="$(echo "$CONFLICT" | sed -n "s/${REG}/\1\2/p" )"
      echo Merging "$CHOSEN" "$CONFLICT"
      # If the original file actually exists (nothing stops a user from deleting it)
      if [ -f "$CHOSEN" ]; then
-       # Merge the two versions of the file, taking from both in case of conflict; this may cause repetition but
-       # won't lose data. Delete the conflict file but only if the merge reported no errors.
-       git merge-file --union "$CHOSEN" "/syncthing/share/parent/directory/empty_file" "$CONFLICT" && rm "$CONFLICT"
+       # Merge the two versions of the file, taking from both in case of conflict;
+       # this may cause repetition but won't lose data. Delete the conflict file
+       # but only if the merge reported no errors.
+       git merge-file --union \
+           "$CHOSEN" "/syncthing/share/parent/directory/empty_file" \
+           "$CONFLICT" && rm "$CONFLICT"
      else
        echo "No current file found"
      fi

@@ -55,3 +55,5 @@ So there's now a cron job running on the Raspberry Pi that acts as our "introduc
 #+END_SRC
 
 The only slight gotcha is you'll need to run ~touch /syncthing/share/parent/directory/empty_file~ to create an empty file to be used as the "parent" of the two conflicting versions. Extra internet points available to anyone who instead works out how to use a historical version from syncthing's archive functionality, but for me on this occasion that wasn't really needed.
+
+Got comments or ideas? The Mastodon post for this blog can be found here: https://mastodon.sdf.org/@mavnn/115038110993820603

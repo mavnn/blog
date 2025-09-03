@@ -82,6 +82,7 @@ Code colouring. There's a slightly interesting quirk here as each language can d
       position: relative;
       white-space: pre;
       margin: 0px;
+      overflow-x: scroll;
   }
    /* Based on the mccarthy theme:
       https://github.com/owainlewis/emacs-color-themes/blob/master/themes/mccarthy-theme.el
@@ -361,7 +362,10 @@ This is the contents of the MIT licensed `water.css` file.
     scrollbar-color: rgb(170, 170, 170) #fff;
     scrollbar-color: var(--scrollbar-thumb) var(--background-body);
     scrollbar-width: thin;
+    font-size: 2.0vw;
   }
+  @media all and (min-width:1000px) { html { font-size: 20px; } }
+  @media all and (max-width:670px) { html{ font-size: 14px; } }
 
   @media (prefers-color-scheme: dark) {
 
@@ -415,7 +419,7 @@ This is the contents of the MIT licensed `water.css` file.
     font-family: ui-rounded, 'Hiragino Maru Gothic ProN', Quicksand, Comfortaa, Manjari, 'Arial Rounded MT', 'Arial Rounded MT Bold', Calibri, source-sans-pro, sans-serif;
     font-weight: normal;
     line-height: 1.4;
-    max-width: 800px;
+    max-width: 1000px;
     margin: 20px auto;
     padding: 0 10px;
     word-wrap: break-word;

@@ -34,7 +34,7 @@ So there's now a cron job running on the Raspberry Pi that acts as our "introduc
      # 3. The time
      REG+="[[:digit:]]\{6\}-"
      # 4. The originating device ID
-     REG+="-[A-Z0-9]\{7\}"
+     REG+="[A-Z0-9]\{7\}"
      # 5. The original file extension
      REG+=".\(.*\)"
      # Find the "winning" version with the original file name

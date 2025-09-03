@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2025/08/15/conflict_free_syncthing_notes.html
 :PUBDATE: 2025-08-15
-:ID:       49B9AFD7-5E45-4AB0-8E1D-47A6F4D27026
+:ID:       A5177CA0-C134-4132-B06B-980B13427ED4
 :END:
 :PROPERTIES:
 :ID:       0C23E268-F37F-4C6C-8E38-F04C03486EED
@@ -40,7 +40,7 @@ So there's now a cron job running on the Raspberry Pi that acts as our "introduc
      # 3. The time
      REG+="[[:digit:]]\{6\}-"
      # 4. The originating device ID
-     REG+="-[A-Z0-9]\{7\}"
+     REG+="[A-Z0-9]\{7\}"
      # 5. The original file extension
      REG+=".\(.*\)"
      # Find the "winning" version with the original file name
@@ -67,7 +67,7 @@ Got comments or ideas? The Mastodon post for this blog can be found here: https:
 :PROPERTIES:
 :RSS_PERMALINK: 2024/05/17/adhd_refs.html
 :PUBDATE: 2024-05-17
-:ID:       2C2F8C41-63D1-4D5C-9DD8-86DF941FF7F7
+:ID:       A1F0A46D-85EE-4E97-AC72-4280F1CDBF17
 :END:
 :PROPERTIES:
 :ID:       16B63501-8C0C-4F3A-82FA-5EE453BBBBC7
@@ -78,7 +78,7 @@ Now, the list of links!
 
 ** About ADHD
 :PROPERTIES:
-:ID:       7B3F0EE3-66EB-4184-BFD1-B74C63B49D26
+:ID:       C2752BF7-314D-4789-8D58-3AD99ED98DB1
 :END:
 
 "How to ADHD" has lots of material on what ADHD is, how it manifests, and what you can do about it: https://howtoadhd.com/
@@ -93,7 +93,7 @@ Finally, I mentioned at one point an organization tool that happens to mesh fair
 
 ** Evidence (or not) of my favourite programming techniques being better
 :PROPERTIES:
-:ID:       DA940DF3-772C-4511-AF3D-7CA9C76B47AB
+:ID:       3EEA4382-509D-4CC5-A00B-E167F6352AE7
 :END:
 
 Dan Luu's tour de force review of research into whether or not strong typing leads to more reliable code: https://danluu.com/empirical-pl/
@@ -104,7 +104,7 @@ The arguments I've heard against domain driven design have tended to be more ane
 
 ** Going deeper on Property Based Testing
 :PROPERTIES:
-:ID:       728696EB-A346-4D60-B187-3391C2D773D1
+:ID:       379143BC-77BA-4938-8390-6E408993F1F1
 :END:
 
 I happen to be a fan of Scott Wlaschin's video and blog posts at https://fsharpforfunandprofit.com/pbt/ titled "The lazy programmer's guide to writing 1000's of tests".
@@ -115,14 +115,14 @@ Fuzz testing is a related topic which somewhat overlaps, but with a different fo
 
 ** Leaning into union types, and domain driven design
 :PROPERTIES:
-:ID:       6382E90C-1C44-47B2-A84A-A2986B87084E
+:ID:       0543AB67-69C3-46AD-B9E6-430BA022ECE3
 :END:
 
 I cannot over stress how amazing a book "Domain Modeling Made Functional" is (again, by Scott Wlaschin) https://pragprog.com/titles/swdddf/domain-modeling-made-functional/. There is also a talk covering the basics available at https://www.youtube.com/watch?v=MlPQ0FsPxPY.
 
 ** Pushing the boundaries on types
 :PROPERTIES:
-:ID:       707A393E-8911-4A0F-BF8E-9C440989D2C0
+:ID:       DB9B38AE-0E1C-42E0-9E36-DCF2889D62EB
 :END:
 
 Probably the place to start is the Idris programming language https://www.idris-lang.org/
@@ -130,7 +130,7 @@ Probably the place to start is the Idris programming language https://www.idris-
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/29/short_term_help.html
 :PUBDATE: 2024-01-29
-:ID:       FF29DFDD-3268-4B51-950E-E3F395F56422
+:ID:       A7039779-ADF5-4878-A745-393ED4AEFED7
 :END:
 :PROPERTIES:
 :ID:       13C93632-F856-4CE5-A937-12C264E40684

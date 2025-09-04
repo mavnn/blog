@@ -29,6 +29,7 @@ Colour variables, so we don't need to keep on repeating them and we have some co
     --code-comment: #2c5115;
     --code-punctuation: #2c3114;
     --code-background: #f6f7f9;
+    --code-text: #363636;
     --background-body: #fff;
     --background: #efefef;
     --background-alt: #f7f7f7;
@@ -182,7 +183,7 @@ Code colouring. There's a slightly interesting quirk here as each language can d
     background-color: var(--code-background);
     border-radius: 8px 8px 0px 0px;
   }
-  
+
   pre.src {
     font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-weight: normal;
@@ -194,7 +195,8 @@ Code colouring. There's a slightly interesting quirk here as each language can d
     background-color: var(--code-background);
     padding: 5px;
     border-radius: 0px 0px 8px 8px;
-    margin-top: 0px
+    margin-top: 0px;
+    color: var(--code-text);
   }
 
   pre.src {

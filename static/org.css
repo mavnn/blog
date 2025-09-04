@@ -14,6 +14,7 @@
   --code-comment: #2c5115;
   --code-punctuation: #2c3114;
   --code-background: #f6f7f9;
+  --code-text: #363636;
   --background-body: #fff;
   --background: #efefef;
   --background-alt: #f7f7f7;
@@ -158,7 +159,8 @@ pre.src {
   background-color: var(--code-background);
   padding: 5px;
   border-radius: 0px 0px 8px 8px;
-  margin-top: 0px
+  margin-top: 0px;
+  color: var(--code-text);
 }
 
 pre.src {

@@ -10,6 +10,49 @@ Well, in general Org-Mode injects a basic set of CSS into web pages as it export
 
 We're going to cheat a bit and use a "classless CSS framework" ([[https://github.com/kognise/water.css][water.css]] is going to be my first attempt). This means we can remove a lot of default styling, and focus only on the more specific classes org adds. The entire unminified water.css file is included at the end of this file so that it gets bundled together with my custom css. I may build a workflow to minimize the results in the future, but honestly it seems a false optimization right now.
 
+Load fonts early to avoid glitches and spacing issues:
+
+#+BEGIN_SRC css :tangle ../../../../static/org.css
+  @font-face {
+    font-family: charter;
+    font-style: normal;
+    font-weight: normal;
+    font-stretch: normal;
+    src: url('/fonts/charter_regular.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: charter;
+    font-style: italic;
+    font-weight: normal;
+    font-stretch: normal;
+    src: url('/fonts/charter_italic.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: charter;
+    font-style: normal;
+    font-weight: bold;
+    font-stretch: normal;
+    src: url('/fonts/charter_bold.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: charter;
+    font-style: italic;
+    font-weight: bold;
+    font-stretch: normal;
+    src: url('/fonts/charter_bold_italic.woff2') format('woff2');
+  }
+
+  @font-face {
+    font-family: source_code_pro;
+    font-style: regular;
+    font-weight: normal;
+    src: url('/fonts/SourceCodePro-Regular.otf.woff2') format('woff2');
+  }
+#+END_SRC
+
 Colour variables, so we don't need to keep on repeating them and we have some consistency.
 
 #+BEGIN_SRC css :tangle ../../../../static/org.css
@@ -84,14 +127,14 @@ Responsive text and content sizes from the absolutely amazing [[https://practica
 
 #+begin_src css :tangle ../../../../static/org.css
   html {
-    font-size: 2.0vw;
+    font-size: 2.4vw;
     height: 100%;
   }
   /** Make sure that while font size scales smoothly, it never gets
    ,* too big or small.
    ,*/
-  @media all and (min-width:1000px) { html { font-size: 20px; } }
-  @media all and (max-width:670px) { html{ font-size: 14px; } }
+  @media all and (min-width:1000px) { html { font-size: 24px; } }
+  @media all and (max-width:670px) { html{ font-size: 18px; } }
 
   body {
     margin: 20px auto;
@@ -99,12 +142,13 @@ Responsive text and content sizes from the absolutely amazing [[https://practica
     max-width: 1000px;
     min-height: 100%;
     position: relative; z-index: -10000; -webkit-font-smoothing: subpixel-antialiased; /* corrects safari rendering */
-    font-family: ui-rounded, 'Hiragino Maru Gothic ProN', Quicksand, Comfortaa, Manjari, 'Arial Rounded MT', 'Arial Rounded MT Bold', Calibri, source-sans-pro, sans-serif;
+    font-family: charter, serif;
     font-weight: normal;
     line-height: 1.4;
     word-wrap: break-word;
     color: var(--text-main);
     background: var(--background-body);
+    text-rendering: optimizeLegibility;
   }
 #+end_src
 
@@ -127,7 +171,6 @@ My nice little "go home" header needs some CSS to get it looking as cute as I'd 
       justify-content: flex-end;
       gap: 10px;
     }
-
 #+END_SRC
 
 Adding some horizontal rules helps keep sections separate.
@@ -139,6 +182,10 @@ Adding some horizontal rules helps keep sections separate.
     height: 1px;
     width: 100%;
     background: var(--border);
+  }
+
+  header + p::first-letter {
+    color: var(--text-bright);
   }
 
   /* The class given to divs containing a top level org heading */
@@ -185,8 +232,9 @@ Code colouring. There's a slightly interesting quirk here as each language can d
   }
 
   pre.src {
-    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    font-family: source_code_pro, monospace;
     font-weight: normal;
+    font-size: 0.8rem;
     position: relative;
     white-space: pre;
     margin: 0px;
@@ -199,9 +247,14 @@ Code colouring. There's a slightly interesting quirk here as each language can d
     color: var(--code-text);
   }
 
+  code {
+    font-size: 80%;
+  }
+
   pre.src {
     /* Rule for keywords etc */
-    & > span[class*="keyword"], & > span[class*="access-modifier"] {
+    & > span[class*="keyword"],
+    & > span[class*="access-modifier"] {
         color: var(--code-keyword);
     }
 
@@ -229,6 +282,7 @@ Code colouring. There's a slightly interesting quirk here as each language can d
     & > span[class*="attribute"],
     & > span[class*="tag"],
     & > span[class*="primitive"],
+    & > span[class*="property"],
     & > span[class*="builtin"] {
         color: var(--code-type);
     }
@@ -346,6 +400,9 @@ Everything below this point is modified from the default org style sheet, that n
   /* added manually after generation */
   .org-src-container:has(pre.src-typescript):before { content: 'TypeScript'; }
   .org-src-container:has(pre.src-fsharp):before { content: 'F#'; }
+  .org-src-container:has(pre.src-nix):before { content: 'nix'; }
+  .org-src-container:has(pre.src-procfile):before { content: 'procfile'; }
+  .org-src-container:has(pre.src-yaml):before { content: 'yaml'; }
 
   caption.t-above { caption-side: top; }
   caption.t-bottom { caption-side: bottom; }
@@ -621,7 +678,6 @@ This is the contents of the MIT licensed `water.css` file that we're choosing to
     border-left: 4px solid var(--focus);
     margin: 1.5em 0;
     padding: 0.5em 1em;
-    font-style: italic;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -1389,7 +1445,6 @@ This is the contents of the MIT licensed `water.css` file that we're choosing to
     color: var(--code);
     padding: 2.5px 5px;
     border-radius: 6px;
-    font-size: 1em;
   }
 
   @media (prefers-color-scheme: dark) {

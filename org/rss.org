@@ -4,7 +4,7 @@
 :PROPERTIES:
 :RSS_PERMALINK: 2025/08/15/conflict_free_syncthing_notes.html
 :PUBDATE: 2025-08-15
-:ID:       97B06D22-4978-43E0-958C-6DC8BEC1022B
+:ID:       5D7B2E3D-0482-4B31-9568-D0E33E418808
 :END:
 :PROPERTIES:
 :ID:       0C23E268-F37F-4C6C-8E38-F04C03486EED
@@ -67,7 +67,7 @@ Got comments or ideas? The Mastodon post for this blog can be found here: https:
 :PROPERTIES:
 :RSS_PERMALINK: 2024/05/17/adhd_refs.html
 :PUBDATE: 2024-05-17
-:ID:       5963E83A-2590-424D-A496-49D11B40A332
+:ID:       6F09C6A5-5A66-4D37-B914-F591287E4EF6
 :END:
 :PROPERTIES:
 :ID:       16B63501-8C0C-4F3A-82FA-5EE453BBBBC7
@@ -78,7 +78,7 @@ Now, the list of links!
 
 ** About ADHD
 :PROPERTIES:
-:ID:       958F53A1-10FA-4D80-A3DE-29BCB2741723
+:ID:       21BBBB2B-1DB1-4858-97AF-00AD32F40651
 :END:
 
 "How to ADHD" has lots of material on what ADHD is, how it manifests, and what you can do about it: https://howtoadhd.com/
@@ -93,7 +93,7 @@ Finally, I mentioned at one point an organization tool that happens to mesh fair
 
 ** Evidence (or not) of my favourite programming techniques being better
 :PROPERTIES:
-:ID:       24FA18F2-39DF-402D-81DC-90B0B6698603
+:ID:       C0C71DA4-8EAC-41D2-9943-48F1AE7A7B8A
 :END:
 
 Dan Luu's tour de force review of research into whether or not strong typing leads to more reliable code: https://danluu.com/empirical-pl/
@@ -104,7 +104,7 @@ The arguments I've heard against domain driven design have tended to be more ane
 
 ** Going deeper on Property Based Testing
 :PROPERTIES:
-:ID:       4F21EB66-3C42-4F7B-8EB1-B0BC746CDB01
+:ID:       1D916DA2-48B3-4E94-A21C-AA72D35094E7
 :END:
 
 I happen to be a fan of Scott Wlaschin's video and blog posts at https://fsharpforfunandprofit.com/pbt/ titled "The lazy programmer's guide to writing 1000's of tests".
@@ -115,14 +115,14 @@ Fuzz testing is a related topic which somewhat overlaps, but with a different fo
 
 ** Leaning into union types, and domain driven design
 :PROPERTIES:
-:ID:       26395353-DAFD-4C84-A264-24E1AE85905A
+:ID:       6F74C1F8-AC2E-40E1-A5A8-E6C6A80C0C5D
 :END:
 
 I cannot over stress how amazing a book "Domain Modeling Made Functional" is (again, by Scott Wlaschin) https://pragprog.com/titles/swdddf/domain-modeling-made-functional/. There is also a talk covering the basics available at https://www.youtube.com/watch?v=MlPQ0FsPxPY.
 
 ** Pushing the boundaries on types
 :PROPERTIES:
-:ID:       F3812F14-F9A2-46D0-8E1F-2C50451BC563
+:ID:       16D6BE38-233D-4D8D-9E60-B0185AE8E1D4
 :END:
 
 Probably the place to start is the Idris programming language https://www.idris-lang.org/
@@ -130,7 +130,7 @@ Probably the place to start is the Idris programming language https://www.idris-
 :PROPERTIES:
 :RSS_PERMALINK: 2024/01/29/short_term_help.html
 :PUBDATE: 2024-01-29
-:ID:       FD57F9B5-04EE-40B0-AA2E-E4916E3A8B11
+:ID:       836700E3-4EFC-4621-AEC4-BDC5F6534FFB
 :END:
 :PROPERTIES:
 :ID:       13C93632-F856-4CE5-A937-12C264E40684

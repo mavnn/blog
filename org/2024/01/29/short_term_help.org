@@ -5,11 +5,6 @@
 #+OPTIONS: num:t
 #+HTML_HEAD_EXTRA: <meta property="og:image" content="https://blog.mavnn.co.uk/images/swirl.svg" /><meta property="og:type" content="article" /><meta property="og:title" content="Short term help" /><meta property="og:url" content="https://blog.mavnn.co.uk/2024/01/29/short_term_help.html" />
 
-#+BEGIN_QUOTE
-Updating to avoid any disappointment: I'm currently working a longer term contract again and I'm not available for the short term services listed here. Sorry!
-#+END_QUOTE
-
-
 These days I generally work longer term contracts, which means I'm not often available for the more immediate "pay money for a solved problem" services I could offer while I was consulting. Right now though, I'm between long term contracts.
 
 "But Michael," I hear you say, "what problems can I give you money to solve so that I can avoid distracting my own amazing team from actually *building the product*?"

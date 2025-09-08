@@ -1,188 +1,10 @@
 #+TITLE: Mavnn's blog
 
-* Short term help
-:PROPERTIES:
-:RSS_PERMALINK: 2024/01/29/short_term_help.html
-:PUBDATE: 2024-01-29
-:ID:       FC480CC2-993D-4C89-943B-5D799F26455E
-:END:
-:PROPERTIES:
-:ID:       13C93632-F856-4CE5-A937-12C264E40684
-:END:
-#+html_head_extra: <meta property="og:image" content="https://blog.mavnn.co.uk/images/swirl.svg" /><meta property="og:type" content="article" /><meta property="og:title" content="Short term help" /><meta property="og:url" content="https://blog.mavnn.co.uk/2024/01/29/short_term_help.html" />
-
-These days I generally work longer term contracts, which means I'm not often available for the more immediate "pay money for a solved problem" services I could offer while I was consulting. Right now though, I'm between long term contracts.
-
-"But Michael," I hear you say, "what problems can I give you money to solve so that I can avoid distracting my own amazing team from actually *building the product*?"
-
-I'm so glad you asked. Or, you know, you can just skip straight to the [[Logistics][logistics]] section if you already know what you want.
-
-#+toc: headlines 2
-
-** Consulting
-:PROPERTIES:
-:ID:       638BD143-AA6A-49A5-85C6-92856AFF7517
-:END:
-
-** Build, packaging, and continuous integration
-:PROPERTIES:
-:ID:       8FD25D59-031C-438A-8623-FB1F7DFF0E82
-:END:
-
-I have spent a /lot/ of time getting build, test, and deployment pipelines up and running. Most of the advice out there assumes that you are using one technology and you can just use "the build tool" for that stack. Reality tends to be more complicated than that, with many projects involving multiple languages, code generation, and extensive test set up.
-
-What kind of things could your CI/CD process do for you? It depends on /your/ needs, but things that have really helped in other places include:
-
-** Making sure that CI/CD is managed *in the code repository* so that running the build locally and on the build server does the same thing in the same way, and the build can evolve in a safe, version controlled way just like the rest of your code
-:PROPERTIES:
-:ID:       0D28EB4C-8A7E-4C0C-9DF2-852DC6CC05AA
-:END:
-** Helping trace and encode the /real/ dependencies in your code base to unlock incremental, cachable build steps and reduce overall build times with concurrency
-:PROPERTIES:
-:ID:       1734050E-298D-4289-AF82-99714756212D
-:END:
-** Split your test suite so tests can be run in parallel (yes, even integration tests) and then aggregate the results
-:PROPERTIES:
-:ID:       3EA767D7-F819-476E-A338-CB858CEB9F42
-:END:
-** Use tools like Nix or multi-step docker/podman builds to create minimal containers that only contain what they really need
-:PROPERTIES:
-:ID:       B2C4D135-19EA-4AE1-BDD2-9A9B0B55696A
-:END:
-*** bonus extra: doing this with Nix also gives you development environments as code and reproducible deployment artifacts - same code in, same container out
-:PROPERTIES:
-:ID:       63C9F891-1EE1-4CD6-BEF8-36F98AE32739
-:END:
-
-If this is a new product/project and you just want someone to make all these considerations go away I can also build you [[*Build a project skeleton][a project skeleton]] with everything set up and ready to go for your preferred CI provider and deployment environment.
-
-** Architecture review
-:PROPERTIES:
-:ID:       66D42273-20E9-4571-9E3E-2437E9173D2B
-:END:
-
-Putting together a new project, or have a code base that's moving from "minimum viable" to "oh - I've got customers"? I can review your plans, or, given your constraints and objectives I can put together a suggested system architecture for you.
-
-It's worth noting that I don't have a personal axe to grind here. I won't tell you to use a "clean" architecture because that's my thing, or to use microservices because they are fashionable. Different architectural styles exist for a reason, and each has its own trade offs in terms of constraints you choose to accept in order to gain certain benefits.
-
-I have the advantage of having helped architect and design solutions in a variety of styles in production environments.
-
-This is a bit of a hybrid service that includes aspects of [[Technology evaluation][technology evaluation]] and [[Code audit][code audit]] with a splash of [[Domain driven design coaching][domain driven design by example]] (so that I understand what you're building) - but zoomed out to look at "how do I put all this together."
-
-** Code audit
-:PROPERTIES:
-:ID:       B7BDA429-6D17-46FD-B712-86B750E1C3A9
-:END:
-
-For ecosystems I've built decent sized projects in (.NET, TypeScript) I can spend some time reviewing your code and pointing out things you may want to improve.
-
-This isn't the kind of code review you'd do on an individual PR: this is the kind of code review where I can (as an outsider) come in with fresh eyes and point out broader patterns in your code base that may be problematic. I can also help you take your conventions and "traditions" and turn them into a coding style guide with (in many cases) automated tooling to help the team put it into practice.
-
-** Technology evaluation
-:PROPERTIES:
-:ID:       E0CFE33C-7348-4459-A534-800B83DDE672
-:END:
-
-Considering buying a new service, picking up a new programming language, or changing to a new database library? I can do the research and evaluation you need based on your requirements. I've been helping drive technology choices in organizations for well over a decade now, and I can help you spot the good, the bad, and the ugly of the options you're considering. I may even be aware of options you haven't considered.
-
-** Workshops and training
-:PROPERTIES:
-:ID:       54180DBB-EB5D-4286-A5FB-1F2CBA1CCAE2
-:END:
-
-Unlike more general consultancy, workshops on topics I know well such as the ones below are a fairly fixed commitment. If you're considering using your training budget, you can assume around 2500 euros/day for up to 6 people online. In person will increase the cost but allows for groups of up to 10 people.
-
-I have also offered bespoke training courses in the past (examples: giving a team of Ruby developers a 5 day crash course in everything they needed to know to take over maintenance of a .NET code base, tailored to the project in question) but that requires significant preparation and a quote.
-
-** Domain driven design coaching
-:PROPERTIES:
-:ID:       DB44E6D2-DCF4-4997-B326-5B4E4D0B89C4
-:END:
-
-At its heart, the promise of domain driven design is simple: a code base that uses the same language as the people using it do, so that developers and domain experts can accurately share understanding of what the code /should/ do and why.
-
-Actually /doing/ domain driven design is not simple at all, because it is a process to help you model reality and it turns out [[http://johnsalvatier.org/blog/2017/reality-has-a-surprising-amount-of-detail][reality has a surprising amount of detail]].
-
-I can help with the process of getting started with DDD, help lead the early exploratory meetings between developers and domain experts, and give advice on how to capture what you discover in code while keeping everything maintainable.
-
-** Event sourcing
-:PROPERTIES:
-:ID:       F06E5183-9787-4C2F-8473-7013F31998F2
-:END:
-
-Event sourcing is a technique for capturing all the events that "have happened" and using those to calculate the current state of your system.
-
-For example, if a customer of yours moves you may publish a ~CustomerHasMoved~ event when they tell you, and a ~CustomerAddressHasChanged~ event when you have finished the business process that manages customers moving.
-
-This has enormous benefits for auditing, for being able to look at how the system has changed over time, and for being able to fix bugs "retroactively" as you don't only have the current state of the system but also all of the steps that got you here.
-
-It /also/ requires a slightly different way of thinking about your code base and some specific tooling to avoid a system that slows down over time. And it affects how you think about business constraints like data retention and [[https://www.dataprotection.ie/en/individuals/know-your-rights/right-erasure-articles-17-19-gdpr][the right to erasure]].
-
-As the saying goes: been there, done that. I can help you do it too.
-
-** Teach property based testing
-:PROPERTIES:
-:ID:       C4BBFDE6-9DAC-472E-9B19-7A48317298E8
-:END:
-
-I'm a huge fan of property based testing, and I'm more than happy to give interactive workshops on getting started with it in .NET, TypeScript, and probably other languages if you ask nicely. Why pay for this when you could download a conference talk about it for free (including ones I've given myself)? Because I'll use a piece of /your/ code to get started with you will walk away with an up and running example in your code base. This will keep us focused on the reality of doing property based testing in practice rather than seeing the nice, easy, examples you tend to be shown in a 45 minute talk.
-
-** Bespoke software creation
-:PROPERTIES:
-:ID:       8DC1B810-93FD-4A59-BD1C-D4D173F9484D
-:END:
-
-** Build a tool/library
-:PROPERTIES:
-:ID:       E7E0899B-3812-47AF-8F1B-DE29456F500E
-:END:
-
-I do just write good code as well. If you need a self contained library or a small solution built, I can do that for you. Whether it is parsing an obscure data format, efficient immutable directed graph data structures, or just a nice F# wrapper around a dotnet library, I will make sure it fits the style you're asking for and is well tested. Significant discounts apply if the results are going to be released under an open source licence.
-
-** Build a project skeleton
-:PROPERTIES:
-:ID:       3AC61BA9-2E22-4737-9FCE-ADA321234F5E
-:END:
-
-If you're starting a green field project, I can create a "skeleton" repository with a managed developer environment, CI/CD and testing story set up and ready to use. You and your team get to start with actually writing your product.
-
-** Logistics
-:PROPERTIES:
-:ID:       1AC24D36-F2CC-4484-B158-758BFABCCFAB
-:END:
-
-Let's cover the basics. I don't want us to waste time, so I'm going to try and keep this as straight forward as possible:
-
-** I will /always/ want to have an extensive conversation(s) and will normally want to provide a quote before starting a short term piece of work. Book a slot to talk on [[https://calendly.com/mavnn/1-hour-slot][Calendly]] or just send me an email (michael at mavnn.eu)
-:PROPERTIES:
-:ID:       528A3A49-3DD3-48AB-87CF-205BB361297F
-:END:
-** I currently live in Italy, about an hour away from Rome. I can offer all of the services above remotely. Asking me to attend in person will add travel costs and at least 2 billable days of my time.
-:PROPERTIES:
-:ID:       AAEB61E4-8DDF-4FA2-A9B5-D16B7E20E343
-:END:
-** You can hire me by the day, but in general for short term work I quote and then charge you for the work delivered rather than bill by unit time. I will consider discounts for non-profits, student organizations, etc. It it's easier for you, I can give a quote that includes all expenses rather than reclaiming them separately. (Hint: if you're in a large organization and this is the first time you're arranging to get a consultant in - /this will be easier for you/)
-:PROPERTIES:
-:ID:       9B1B2539-F7F6-4FA1-8C65-20E9359338CD
-:END:
-*** I am VAT registered in the EU
-:PROPERTIES:
-:ID:       6F320D99-031A-4AD4-A7DD-48BD1C2C694C
-:END:
-** In the rare occasion where it turns out that I cannot deliver what I promised (I'm just one human - things like illness can happen) I will let you know promptly, and before the work is due to be delivered, so we can renegotiate where to go from the reality of the situation.
-:PROPERTIES:
-:ID:       8C5B4595-7E2A-4A5C-82FC-0F01C9DB52B5
-:END:
-
-That's about everything, I think.
 * Conflict free syncthing notes
 :PROPERTIES:
-:RSS_PERMALINK: 2025/08/15/conflict_free_syncthing_notes.html
-:PUBDATE: 2025-08-15
-:ID:       BD1851E9-E993-484F-8F0A-FB0CA3E02D57
-:END:
-:PROPERTIES:
 :ID:       0C23E268-F37F-4C6C-8E38-F04C03486EED
+:RSS_PERMALINK: 2025/08/15/conflict_free_syncthing_notes.html
+:PUBDATE:  2025-08-15
 :END:
 Just a short trick this time, mostly for my own records. As a family we've started moving to Syncthing for syncing files across devices, and "open" note taking formats like ".org" and ".md" for long term note taking. I've been using org-mode for a while personally, and now the rest of the family have been burned enough by the alternatives over the years that they're coming to similar conclusions even if not all of them want to use Emacs!
 
@@ -238,318 +60,144 @@ So there's now a cron job running on the Raspberry Pi that acts as our "introduc
 The only slight gotcha is you'll need to run ~touch /syncthing/share/parent/directory/empty_file~ to create an empty file to be used as the "parent" of the two conflicting versions. Extra internet points available to anyone who instead works out how to use a historical version from syncthing's archive functionality, but for me on this occasion that wasn't really needed.
 
 Got comments or ideas? The Mastodon post for this blog can be found here: https://mastodon.sdf.org/@mavnn/115038110993820603
-* Types et al as accessibility tools for the ADHD brain
+* A gentle introduction to Effect TS
 :PROPERTIES:
-:RSS_PERMALINK: 2024/05/17/adhd_refs.html
-:PUBDATE: 2024-05-17
-:ID:       08AA953F-A7C5-44AC-AE51-57AB57A49036
+:ID:       897A1F78-39B6-4704-AF2F-2A774F9B1F72
+:RSS_PERMALINK: 2024/09/16/intro_to_effect_ts.html
+:PUBDATE:  2024-09-16
 :END:
+I've recently been writing TypeScript again in a green field project, and we made the decision to
+use the [[https://effect.website/][Effect]] library. It's not a small decision to make: although you can use bits of Effect in
+an existing code base, its real benefit is when it is used as (to quote the website) "the missing
+standard library for TypeScript".
+
+Overall, we're happy with the choice but the learning curve has a few sharp edges and while the
+[[https://effect.website/docs/introduction][docs]] aren't bad it does feel like they could do a better job of introducing the most used features
+in a way that feels familiar to TypeScript developers so they can at least *read existing* Effect
+code before starting to introduce the many, many, powerful features that come with the library.
+
+This post is an attempt to do exactly that.
+
+** The Effect type
 :PROPERTIES:
-:ID:       16B63501-8C0C-4F3A-82FA-5EE453BBBBC7
-:END:
-I ended up with a fair number of references for my talks at [[https://www.youtube.com/watch?v=vd1-rAIYV6I][Software You Can Love]] and [[https://www.youtube.com/watch?v=DG5gLPFKcbk][LambdaDays 2024]] on how I use various tools and techniques to compensate for my late diagnosed ADHD. The two talks are based off the same outline and slides, although the speaker having ADHD the content does vary a bit between them...
-
-Now, the list of links!
-
-** About ADHD
-:PROPERTIES:
-:ID:       0B46CA6D-8978-4437-8F06-2363600A7E3E
-:END:
-
-"How to ADHD" has lots of material on what ADHD is, how it manifests, and what you can do about it: https://howtoadhd.com/
-
-A paper reviewing research on working memory in adults with ADHD: https://psycnet.apa.org/record/2013-16996-001
-
-Mads Torgersen (lead designer of C# at Microsoft) talks about his own diagnosis on the No Dogma Podcast: https://nodogmapodcast.bryanhogan.net/165-mads-torgersen-adhd/
-
-(Bonus extra: that last link has /more/ links to more ADHD resources)
-
-Finally, I mentioned at one point an organization tool that happens to mesh fairly well with my own variant of ADHD called SkedPal: https://skedpal.com/. You prioritize tasks in advance, and assign them to "time maps" (i.e. this times are work times, these times are home times). Then you hit the button and it suggests a calendar of tasks. I've found it useful because it allows things like "this task is important to me but it doesn't matter when it is done" and "this task isn't very important but if I'm going to do it, it needs happen by Friday" and it will suggest a sane next thing to do. And when you (inevitably) fail to actually follow the plan, you just hit the button again and it suggests a new plan based on the things you actually did rather than the things it thought you were going to do. Caveat: it's not free software, and it does charge a monthly fee.
-
-** Evidence (or not) of my favourite programming techniques being better
-:PROPERTIES:
-:ID:       AFD6C06E-AF94-4958-94E9-0B829118A474
+:ID:       01E0F350-37A9-4E0D-AA0D-7D63E111CE5C
 :END:
 
-Dan Luu's tour de force review of research into whether or not strong typing leads to more reliable code: https://danluu.com/empirical-pl/
+The very first thing you need to understand about Effect is that it is built around a specific type.
+Appropriately enough, the ~Effect~ type. This type functions as a replacement for ~Promise~, allowing
+for asynchronous code, but also covers a few other needs.
 
-Brian Marick has a well thought out post on why he's not fully convinced by property based testing: https://www.crustofcode.com/a-reluctant-rebuttal/. Most importantly he links to a paper written in /1990/ that partition testing has some issues, all of which would also apply to property based testing: https://www.site.uottawa.ca/~gvj/papers/Software%20Engineering%20IEEE%20Transactions%20on%201990%20Hamlet.pdf. It is worth noting that both Marick (about PBT), and Hamlet and Taylor (about partition testing) do state that they see use cases for these testing methods, but that they do also have concerns.
+Let's get started, in the traditional way:
 
-The arguments I've heard against domain driven design have tended to be more anecdotal but mostly boil down to: "you're making the code harder to understand by forcing developers to understand both the code /and/ the specialist terminology of the users at the same time."
+#+begin_src typescript
+  import { Effect } from "effect"
 
-** Going deeper on Property Based Testing
-:PROPERTIES:
-:ID:       ADBA1C2B-5C32-4E8E-9C75-0D1D9727F73E
-:END:
-
-I happen to be a fan of Scott Wlaschin's video and blog posts at https://fsharpforfunandprofit.com/pbt/ titled "The lazy programmer's guide to writing 1000's of tests".
-
-Otherwise, a quick google search for "John Hughes" will net you many talks from the author of the first property based testing framework.
-
-Fuzz testing is a related topic which somewhat overlaps, but with a different focus.
-
-** Leaning into union types, and domain driven design
-:PROPERTIES:
-:ID:       28A39542-386E-4B31-A5F9-C5C3B3801A45
-:END:
-
-I cannot over stress how amazing a book "Domain Modeling Made Functional" is (again, by Scott Wlaschin) https://pragprog.com/titles/swdddf/domain-modeling-made-functional/. There is also a talk covering the basics available at https://www.youtube.com/watch?v=MlPQ0FsPxPY.
-
-** Pushing the boundaries on types
-:PROPERTIES:
-:ID:       6BADF240-8830-47C5-BBF4-BB09C7576C7B
-:END:
-
-Probably the place to start is the Idris programming language https://www.idris-lang.org/
-* Foundations: Dev Journal 1
-:PROPERTIES:
-:RSS_PERMALINK: 2024/01/31/dev-journal-1.html
-:PUBDATE: 2024-01-31
-:ID:       2E37F5DE-6407-4B29-AC32-BBC5CEE7440E
-:END:
-:PROPERTIES:
-:ID:       BEC296E9-14FB-4C4B-9F41-B15462323B56
-:END:
-This is something a little bit new. A series I'm starting that documents the building of a simple project from the ground up using a set of tools and techniques I've come to either really like, or that I'd like to try out.
-
-On the one hand this is a personal project. On the other, I'd like to take advantage of nice things like CI/CD, testing, etc, even when I'm working on something for myself. So this is also a mini-tour of many of the things I would do setting up a new greenfield project for a team.
-
-As the series progresses, I'll carry on adding the sections here.
-
-*The series so far*
-
-** [[https://blog.mavnn.co.uk/2024/01/31/dev-journal-1.html][Foundations]]: Build and package
-:PROPERTIES:
-:ID:       F65317F1-1ABC-4E3D-8221-FFC4343C9C67
-:END:
-** [[file:../../../2024/02/06/dev-journal-2.org][Scaffolding]]: Testing and consistency
-:PROPERTIES:
-:ID:       11B6759B-43D8-40B2-9CA7-255D55896CE4
-:END:
-** [[../../../2024/02/20/dev-journal-3.org][Does it run?]]: Make sure the docker container is valid and stays valid
-:PROPERTIES:
-:ID:       1D139F0E-FFB1-4AB5-B81D-CD8807790AAC
-:END:
-** [[../../../2024/03/01/dev_journal_4.org][Log in, log out]] (and [[file:../../../2024/03/05/dev_journal_4_2.org][part 2]]): Adding the database and the ability to log into our web site
-:PROPERTIES:
-:ID:       0DFAD68A-CD09-4E77-A5A0-EDB31E28E87E
-:END:
-** [[../../../2024/03/09/dev_journal_5.org][Internal quality review]]: making it easier to make correct changes to our code
-:PROPERTIES:
-:ID:       87D5ED2B-F03D-4BEB-AE4A-8E6E36C63312
-:END:
-** [[../../../2024/03/19/dev_journal_6.org][With style]]: Adding style and interactivity with server side HTML
-:PROPERTIES:
-:ID:       826E6B40-EB9E-4767-9B94-B50A1790BE3A
-:END:
-
-** Part 1: Foundations
-:PROPERTIES:
-:ID:       E01196D8-EBC2-4FA3-B555-6B2F722398B7
-:END:
-
-Our application will eventually be a little web site for ~redacted in case I change my mind~. I'm going to be using mix of tried and new tech (for me personally).
-
-On the things I'd like to try front, we have:
-
-** [[https://htmx.org/][htmx]] (probably with [[https://bulma.io/][bulma]] for initial styling) to provide the UI. This isn't going to be hugely interactive application, it is mostly going to collect information from forms, and display nice looking output tables so htmx's server side rendering model seems a perfect fit. I've used server side rendering in other projects and liked it, and htmx seems a low impact way to take that to the next level.
-:PROPERTIES:
-:ID:       4648B48D-3B02-481B-832C-E84DCBD7556A
-:END:
-** [[https://www.falcoframework.com/][falco]] for writing the backend server in F#. [[https://xyncro.github.io/sites-freya.io/][Freya]], my webserver of choice for F# back in the day, is no longer actively maintained but it looks like Falco has taken some of its nicer features and done its own thing with them.
-:PROPERTIES:
-:ID:       6BF0B10D-5595-4037-908B-03D2A16EAF42
-:END:
-
-On the technologies I've used before and found useful front, we have:
-
-** [[https://nixos.org/][nix]] to give a version controlled build/development environments and reproducible packaging.
-:PROPERTIES:
-:ID:       F9ACD8B3-CFE8-4FC7-B246-220E6EEBD182
-:END:
-** [[https://direnv.net/][direnv]] for seamless local development environments.
-:PROPERTIES:
-:ID:       8619F77F-7B7F-4908-B2DD-11478428324A
-:END:
-** [[https://github.com/JasperFx/marten][marten]] from the "Critter Stack" as an event store on top of postgresql to build our datastore.
-:PROPERTIES:
-:ID:       8CFA0A9A-E865-4E4E-8E84-3DB986B2D7D1
-:END:
-** [[https://gitlab.com/][gitlab]] for code repository, container registry and CI/CD pipeline.
-:PROPERTIES:
-:ID:       B7A820CA-0007-45F7-ABA8-A6815B74B74B
-:END:
-
-I'm not sure how far I'm going to take this experiment publicly, but what I'm going to focus on first is just the basics of any online app: people being able to sign up, log in, and manage an account for a paid service. At least that far the whole project will be MIT licensed, so if you like what you see you can just pick it up and use it as a starter template for your own project.
-
-For today, let's start with a /minimum deployable product/: a "Hello world" Falco server with CI/CD pipeline in place. We'll have a gitlab hosted project anybody with a working nix environment can pull down and:
-
-** run ~nix run~ and have a webserver running locally that will respond to get requests to ~/~ with "Hello world"
-:PROPERTIES:
-:ID:       12566AFE-C776-42F5-AF5E-1A471440929E
-:END:
-** run ~nix build .#dockerImage~ to build a docker image with the same architecture they're using (i.e. ~aarch64-darwin~ if you run it on a Mac)
-:PROPERTIES:
-:ID:       21DE2713-A4F4-4B5B-B8D8-9F7CB7A9E5ED
-:END:
-** by pushing a commit to gitlab trigger a CI pipeline building said docker image for ~x86_64-linux~ and pushing it to a package registry ready to deploy
-:PROPERTIES:
-:ID:       FF6049A3-F631-4BA7-96D9-D0F675560C6E
-:END:
-
-Enough bullet points. What did I actually do? (Sneak preview: [[https://gitlab.com/mavnn/caldance/-/tree/6b39d13d98199220d623870faf2b49fbda58d8a5][browse the gitlab repo at the time of the commit that this post describes]])
-
-*** Setup a nix flake to provide our environment
-:PROPERTIES:
-:ID:       FDA3289B-7FA2-4ED4-A8F4-2608D019486B
-:END:
-
-A nix "flake" is a declarative description of a set of packages we'd like to be able to reference. You can read the [[https://gitlab.com/mavnn/caldance/-/blob/6b39d13d98199220d623870faf2b49fbda58d8a5/flake.nix][whole file]] but the important part for today is that our ~flake.nix~ file specifies three outputs in this stanza:
-
-#+begin_src nix
-  # Tools we want available during development
-  devShells.default = pkgs.mkShell {
-    buildInputs = [ dnc.sdk_8_0 pkgs.nixfmt pkgs.skopeo ];
-  };
-
-  # Default result of running `nix build` with this
-  # flake; it builds the F# project `CalDance.fsproj`
-  packages.default = pkgs.buildDotnetModule {
-    pname = name;
-    version = "0.1";
-
-    src = ./.;
-    projectFile = "CalDance.fsproj";
-    nugetDeps = nugets;
-
-    # We set nix to create an output that contains
-    # everything needed, rather than depending
-    # on the dotnet runtime
-    selfContainedBuild = true;
-
-    # This is a webserver, and it complains if it
-    # has no access to openssl
-    runtimeDeps = [ pkgs.openssl pkgs.cacert ];
-
-    dotnet-sdk = dnc.sdk_8_0;
-    dotnet-runtime = dnc.runtime_8_0;
-    executables = [ "CalDance" ];
-  };
-
-  # A target that builds a fully self-contained docker
-  # file with the project above
-  packages.dockerImage = pkgs.dockerTools.buildImage {
-    name = name;
-    config = {
-      # asp.net likes a writable /tmp directory
-      Cmd = pkgs.writeShellScript "runServer" ''
-        ${pkgs.coreutils}/bin/mkdir -p /tmp
-        ${pkgs.coreutils}/bin/mount -t tmpfs tmp /tmp
-        ${packages.default}/bin/CalDance.Server
-      '';
-      Env =
-        [ "DOTNET_EnableDiagnostics=0" "ASPNETCORE_URLS=http://+:5001" ];
-      ExposedPorts = { "5001/tcp" = { }; };
-    };
-  };
+  const hello = (name?: string): Effect.Effect<string> =>
+    Effect.gen(function* () {
+      return `Hello, ${name || "world"}!`
+    })
 #+end_src
 
-First we say we want a shell environment which includes the dotnet core SDK (version 8), nixfmt (for formatting nix files), and skopeo which we can use for moving docker images around.
+This code is spiritually the same as writing:
 
-Then we define the default output for this flake: it uses the ~buildDotnetModule~ to specify that in our case it should build the executable ~CalDance~ based on the F# project file ~CalDance.fsproj~. A helper makes sure that Nix is aware of which nuget packages the project has referenced, so that they can be packaged correctly.
-
-Finally, we define the ~dockerImage~ which uses the ~dockerTools.buildImage~ helper to say we want to be able to build a docker image that contains the executable from the default package above, everything it needs to run and /nothing else at all/. In our case, this produces a docker image weighing in at around 80MB - similar to what you'd get optimising a [[https://blogit.create.pt/telmorodrigues/2022/03/08/smaller-net-6-docker-images/][two step hand crafted dockerfile]], and significantly smaller than using the official [[https://hub.docker.com/_/microsoft-dotnet-aspnet/][Microsoft ASP.NET runtime image]].
-
-*** direnv
-:PROPERTIES:
-:ID:       DC672BF7-5DEA-4F99-B8F1-4A45FE1FE16E
-:END:
-
-Direnv is a tool that can add environment variables to your shell when you enter a directory. It also, conveniently, knows about Nix flakes.
-
-We add a ~.envrc~ file to our project with the contents:
-
-#+begin_src bash
-  #!/usr/bin/env bash
-  # the shebang is ignored, but nice for editors
-  use flake
-#+end_src
-
-Next time we move into this directory, direnv will ask us to allow this ~.envrc~ file. If we accept, our normal local shell will have everything specified in the ~devShell~ above added to its path. This means we can, for example, use the ~dotnet~ command and we will use the version specified in ~flake.nix~ even if we haven't installed a system wide version of dotnet at all.
-
-*** The F# project
-:PROPERTIES:
-:ID:       5D73D2BE-2AC9-4F75-898B-9691CA8C3539
-:END:
-
-There's absolutely nothing special about this at all. I just created an F# project with ~dotnet~ on the command line, moved ~Program.fs~ into a sub directory called ~src~ because I prefer it that way, and then added a package dependency on ~Falco~ using ~dotnet add package Falco~.
-
-Replace the contents of ~Program.fs~ with:
-
-#+begin_src fsharp
-  module Mavnn.CalDance.Server
-
-  open Falco
-  open Falco.Routing
-  open Falco.HostBuilder
-
-  webHost [||] {
-      endpoints [
-          get "/" (Response.ofPlainText "Hello World")
-      ]
+#+begin_src typescript
+  const helloAsync = async (name?: string): Promise<string> => {
+    return `Hello, ${name || "world"}!`
   }
 #+end_src
 
-*** Set up the CI pipeline
-:PROPERTIES:
-:ID:       E91D9723-3972-4495-AE15-15CA58EA0960
-:END:
+You can think of the ~Effect.gen(function* () { ... })~ as a slightly more verbose version of the ~async~ prefix to a function.
 
-Having used Nix for our development environment, our CI pipeline becomes exceedingly straight forward. All we need is a build container with Nix available and we have all the other information we need for the build already. Nix themselves provide a ~nixos/nix~ image (Nix is the package manager, NixOS is the linux distribution that uses Nix as its package manager) so we'll just use that.
+What about calling the function? Again, we have a similar concept but different syntax to ~async/await~.
 
-There's a little bit of boilerplate to tell nix that we want to allow flakes and to allow connection to the gitlab package registry. Once that is done, we log into the registry for this project using the CI provided environment variables, run ~nix build .#dockerImage~ and then push the results up to the registry.
+#+begin_src typescript
+  // Effect version
+  const sayHello: Effect.Effect<void> =
+    Effect.gen(function* () {
+      const greeting = yield* hello("world")
+      yield* sendGreetings(greeting)
+    })
 
-#+begin_src yaml
-  build-container:
-    image:
-      name: "nixos/nix:2.19.3"
-    variables:
-      IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
-    before_script:
-      - nix-env --install --attr nixpkgs.skopeo
-    script:
-      - mkdir -p "$HOME/.config/nix"
-      - echo 'experimental-features = nix-command flakes' > "$HOME/.config/nix/nix.conf"
-      - mkdir -p "/etc/containers/"
-      - echo '{"default":[{"type":"insecureAcceptAnything"}]}' > /etc/containers/policy.json
-      - skopeo login --username "$CI_REGISTRY_USER" --password "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-      - 'nix build .#dockerImage'
-      - ls -lh ./result
-      - 'skopeo inspect docker-archive://$(readlink -f ./result)'
-      - 'skopeo copy docker-archive://$(readlink -f ./result) docker://$IMAGE_TAG'
+  // Async/await version
+  const sayHelloAsync: Promise<void> = {
+    const greeting = await helloAsync("world")
+    await sendGreetingsAsync(greeting)
+  }
 #+end_src
 
-It's worth noting here that Nix is a deterministic build system (for example, stripping dates from compiled metadata so building the same source code on a different day doesn't product a different binary). In a "real life" context I would be caching the results of the nix build steps to a service like [[https://www.cachix.org/][Cachix]] so that they could be reused between builds, which becomes increasingly useful as the project grows and starts to be comprised of multiple build steps (Nix will be able to cache each "step" individually, even if you only ask for the final outcome of the process).
+Given that we're using a cooperative scheduling system for asynchronous code, you can think of ~yield*~ as
+saying "hey runtime - I'm yielding the thread now, start me back up when the effect on the right has finished."
 
-*** Wrapping it all up
+There is, however one big difference between these two which will catch you out if you don't know about it.
+
+** Hot and cold promises
 :PROPERTIES:
-:ID:       1FA171CF-0B37-4B66-AB4F-8BE3AD911AA1
+:ID:       0244A81A-7C2E-4DAF-8149-8E18B8B442E0
 :END:
 
-Not a bad first days work, I'd say. Our project is already at a stage that we can work on it with standard .NET tooling (for instance, adding a new nuget package with ~dotnet package add ...~ will automatically flow through to that package being added to the docker image) and CI will produce on push a lean deployable artifact. Versions of /everything/ we are using from the .NET SDK to the nuget package we're depending on are fixed across all environments, and we have a nice place to add more developer tooling as we move forwards - for example standardizing the version of postgresql that will be used during development and in CI.
+~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
 
-As a bonus extra, anybody with nix installed can build and run the project without having to know .NET or have any .NET tooling installed; a very nice feature when you have others depending on your work who might want to run your code locally, but may not have chosen the same tech stack.
+Well, in the example above ~sayHelloAsync~ is a constant value. As soon as the value is created, the logic within
+the promise will be scheduled for execution and we will start the process of asynchronously running the ~helloAsync~
+function. If we await the result of ~sayHelloAsync~ somewhere else, we will block until the function has finished.
 
-*** Feedback? Comments?
+This also means that if we ~await~ ~sayHelloAsync~ in two different places, we will only send greetings *once*. After
+all, the ~Promise~ type that we are handing around represents the running execution of an asynchronous process; it has
+already started, and awaiting it multiple times won't start it again.
+
+~Effect~, by contrast, is a "cold" or "thunked" asynchronous construct. It represents a series of steps that /will be/
+executed /if/ the result is requested.
+
+So if we run:
+
+#+begin_src typescript
+  const camelot: Effect.Effect<void> =
+    Effect.gen(function* () {
+      yield* sayHello
+      yield* sayHello
+      yield* sayHello
+    })
+#+end_src
+
+We will send the greetings three times, but only when somebody requests the result of running ~camelot~. Until
+then, nothing will happen at all.
+
+*If you remember nothing else from this post*, remember that an ~Effect~ that nobody executes never runs. This /will/ catch you
+out with logging.
+
+#+begin_src typescript
+  // logs nothing
+  const camelot: Effect.Effect<void> =
+    Effect.gen(function* () {
+      Effect.log("Bass voice: spam a looooooot")
+      yield* sayHello
+      yield* sayHello
+      yield* sayHello
+    })
+
+  // logs the bass voice
+  const camelot: Effect.Effect<void> =
+    Effect.gen(function* () {
+      yield* Effect.log("Bass voice: spam a looooooot")
+      yield* sayHello
+      yield* sayHello
+      yield* sayHello
+    })
+#+end_src
+
+Although the ability to create Effects without executing them can be extremely useful, leaving ~yield*~ out of
+your code when you actually need it is probably the most frustrating element of learning Effect, and the one
+that the compiler is least able to warn you about.
+
+** Pipes
 :PROPERTIES:
-:ID:       87BD3AC9-47D4-4571-A7C9-CFA453586EC0
+:ID:       5EDA0F5B-25E3-4493-A6E7-7A7E4E2ED6CF
 :END:
 
-Have questions? Comments? Hate something, love something, know a better way of doing something? Drop an issue on the repository at [[https://gitlab.com/mavnn/caldance][https://gitlab.com/mavnn/caldance]] and let me know. I'll be pointing a tag at the commit referenced by each blog post, so I can always branch off and include your ideas in a future revision!
+Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.
 
-*** Next
-:PROPERTIES:
-:ID:       CF974ECC-320F-484D-B98E-50F32F3EEA89
-:END:
+The main place you'll see this is that we can wrap ~Effect~ values in a wide variety of ways. These are very powerful,
+but quickly start suffering from the "lisp effect" of a pyramid of brackets when we start combining them.
 
-[[../../../2024/02/06/dev-journal-2.org][Part 2]] adds unit tests and consistent formatting to the project.
+Let's rewrite the ~camelot~ function above using the built in ~Effect.repeatN~ method:
+

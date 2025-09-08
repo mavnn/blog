@@ -80,7 +80,7 @@ This post is an attempt to do exactly that.
 
 ** The Effect type
 :PROPERTIES:
-:ID:       01E0F350-37A9-4E0D-AA0D-7D63E111CE5C
+:ID:       270ECBCE-6867-4853-9587-DF705E732BFD
 :END:
 
 The very first thing you need to understand about Effect is that it is built around a specific type.
@@ -132,7 +132,7 @@ There is, however one big difference between these two which will catch you out 
 
 ** Hot and cold promises
 :PROPERTIES:
-:ID:       0244A81A-7C2E-4DAF-8149-8E18B8B442E0
+:ID:       F2A23C50-3555-4D45-ACE3-41ACB5901919
 :END:
 
 ~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
@@ -191,7 +191,7 @@ that the compiler is least able to warn you about.
 
 ** Pipes
 :PROPERTIES:
-:ID:       5EDA0F5B-25E3-4493-A6E7-7A7E4E2ED6CF
+:ID:       9A5D6F4A-FACD-4AEC-A8FE-01F7C5B5220D
 :END:
 
 Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.

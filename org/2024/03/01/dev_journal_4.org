@@ -4,7 +4,7 @@
 #+TITLE: Log in, log out: Dev Journal 4 (part 1)
 
 #+BEGIN_QUOTE
-This post is part of the "Dev Journal" series. [[file:../../../2024/01/31/dev-journal-1.org][Part 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
+This post is part of the "Dev Journal" series. [[id:BEC296E9-14FB-4C4B-9F41-B15462323B56][Foundations: Dev Journal 1]] contains the series index, while the [[https://gitlab.com/mavnn/caldance/-/commits/DevJournal4?ref_type=tags][DevJournal4]] tag for the CalDance project in GitLab holds the state of the repository as described here.
 #+END_QUOTE
 
 This is the big one: we have our first piece of event sourcing, and a bunch of infrastructure to get us there. So big, in fact, that I'm going to split the post into two and publish the remainder early next week.

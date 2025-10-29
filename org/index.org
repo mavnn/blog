@@ -4,6 +4,7 @@
 #+TITLE: Mavnn's Blog
 
 #+INCLUDE: ./blurb.inc.org
+- [[file:./2025/10/29/coding_games_with_a_story.org][Coding games with a story]] (2025-10-29)
 - [[file:./2025/09/16/stun_lock_procrastination.org][Stun lock procrastination]] (2025-09-16)
 - [[file:./2025/08/15/conflict_free_syncthing_notes.org][Conflict free syncthing notes]] (2025-08-15)
 - [[file:./2024/09/16/intro_to_effect_ts.org][A gentle introduction to Effect TS]] (2024-09-16)

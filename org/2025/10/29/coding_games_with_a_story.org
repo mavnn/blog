@@ -1,0 +1,18 @@
+:PROPERTIES:
+:ID:       26BB433F-E0DF-4CF5-88D4-1D8C3A6C0046
+:END:
+#+TITLE: Coding games with a story
+
+A short post this time, but one that will probably lead to more content here.
+
+I'm teaming up with the long established and trusted [[https://www.thinkersmeetup.com/][Thinkers Meetup]] to offer a course for 9-13 year old thinkers to write visual novels called [[https://www.thinkersmeetup.com/service-page/coding-games-with-a-story-ages-9-13][Coding Games with a Story]]. I'm hoping this will be the first of many!
+
+If you know people in that age range who would in interested, or you're wondering what on earth I'm talking about, this video might help!
+
+#+BEGIN_EXPORT html
+<div style="text-align: center;">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/bF32DSFe0Hw?si=4bZwyRu6a3bMNhVY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+#+END_EXPORT
+
+For those of you who have been following along for a while, you might be worth interested to hear that the course is being powered by an open source website written in F#, including some code that might look very familiar from my previous "dev journals" a year or two back. If you're interested in having a look at what a full (if not huge) F# project looks like, with realistically unpolished code, the repository is at https://github.com/mavnn/VisualInk.

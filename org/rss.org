@@ -13,11 +13,13 @@ I'm teaming up with the long established and trusted [[https://www.thinkersmeetu
 If you know people in that age range who would in interested, or you're wondering what on earth I'm talking about, this video might help!
 
 For those of you who have been following along for a while, you might be worth interested to hear that the course is being powered by an open source website written in F#, including some code that might look very familiar from my previous "dev journals" a year or two back. If you're interested in having a look at what a full (if not huge) F# project looks like, with realistically unpolished code, the repository is at https://github.com/mavnn/VisualInk.
+
+Got comments? This [[https://mastodon.sdf.org/@mavnn/115458607249000834][Mastodon post]] is a great place to leave them.
 * Stun lock procrastination
 :PROPERTIES:
 :RSS_PERMALINK: 2025/09/16/stun_lock_procrastination.html
 :PUBDATE:  2025-09-16
-:ID:       BC7FE7BB-0D82-4F8C-AE58-4FEF13C23323
+:ID:       A4FEEB99-1608-4610-9132-3281C87D892F
 :END:
 One of the primary markers of ADHD is /not starting/. There are many other aspects, for sure, but often what looks like "hyperactivity" is actually just the noise getting in the way of what we /want/ to be doing but that we haven't started yet.
 
@@ -35,11 +37,11 @@ My default state of procrastination is not the same as John Perry's; he describe
 
 ** I do something for hours, and when I'm next interrupted I wonder "why was I even doing that?"
 :PROPERTIES:
-:ID:       7CCBC4B9-AA15-47C6-B8A9-6400642BE3D2
+:ID:       BA5F1AC8-77B5-4502-8EC9-A4D572BE55F7
 :END:
 ** I realise that I need to do something and I cannot make myself do it so I do /nothing/
 :PROPERTIES:
-:ID:       08E5E064-B64D-4D8E-AB78-E734BFF2E105
+:ID:       AC16C70D-58B1-4942-939F-B96959DAB7A5
 :END:
 
 And on that latter point, I really do mean /nothing/. If I know that I need to do the washing up, but I can't face it, I will "stun lock" sitting on a chair for anything from minutes to multiple hours because washing up is what I /need to do/ and the washing up is what I /cannot do/. I have lost entire days to not being able to face trivial ten minute tasks because they were the crucial thing that needed to get done, and I could not face starting them.
@@ -137,7 +139,7 @@ This post is an attempt to do exactly that.
 
 ** The Effect type
 :PROPERTIES:
-:ID:       7F364232-908C-4D7B-B8CB-2669681BBCE9
+:ID:       1FFCA6E9-D8F8-4B27-B791-7F2EA83F331C
 :END:
 
 The very first thing you need to understand about Effect is that it is built around a specific type.
@@ -189,7 +191,7 @@ There is, however one big difference between these two which will catch you out 
 
 ** Hot and cold promises
 :PROPERTIES:
-:ID:       9B1FE3D6-AB68-40C3-A1BF-CE503E8BD1A2
+:ID:       F417AD5E-5897-429E-9D4F-621941B9B770
 :END:
 
 ~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
@@ -248,7 +250,7 @@ that the compiler is least able to warn you about.
 
 ** Pipes
 :PROPERTIES:
-:ID:       6F0C585E-9CE1-475C-8EFA-2D52B94A9881
+:ID:       8E3782DE-C4BB-4743-977A-EE2B61CF3968
 :END:
 
 Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.

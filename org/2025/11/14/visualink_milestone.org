@@ -1,0 +1,12 @@
+:PROPERTIES:
+:ID:       7E453C3D-2A65-424C-8959-758D1DCB3ACC
+:END:
+#+TITLE: Publishing with VisualInk
+
+VisualInk is my current project to work with novice coders (children, but also potentially adults as well) who are interested in story telling. It hit a big milestone today as I added the ability to publish visual novels on the platform - which is slightly more challenging than you'd think as that means threading through the ability to see assets that belong to a known user without accidentally opening up the user's underlying script files or letting people edit their content.
+
+As a side effect, I was also able to add a feature I've been wanting from the beginning: [[https://visualink.mavnn.eu/examples/AloneInTheDark][an example mini-visual novel]] that you can play through without having to sign up or create an account. For bonus points, you can [[https://visualink.mavnn.eu/script/demo][view the script of the example]] in a fully functional editor to get a handle of how Ink works (although you can't save or run your changes unless you set up an account).
+
+Anyway; I'm pretty chuffed about all of this. If you're interested in spreading the joy of writing interactive fiction, I'd love some more example stories to show case, and if you're interested in how my F# code for the server is evolving I'm always up for pull requests and happy to answer questions. In either case, the place to suggest things is at the [[https://github.com/mavnn/VisualInk][project repository]].
+
+If you'd just like to comment on this milestone, then [[https://mastodon.sdf.org/@mavnn/115548826768453925][this mastodon post]] is the place to be.

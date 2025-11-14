@@ -1,5 +1,18 @@
 #+TITLE: Mavnn's blog
 
+* Publishing with VisualInk
+:PROPERTIES:
+:ID:       7E453C3D-2A65-424C-8959-758D1DCB3ACC
+:RSS_PERMALINK: 2025/11/14/visualink_milestone.html
+:PUBDATE:  2025-11-14
+:END:
+VisualInk is my current project to work with novice coders (children, but also potentially adults as well) who are interested in story telling. It hit a big milestone today as I added the ability to publish visual novels on the platform - which is slightly more challenging than you'd think as that means threading through the ability to see assets that belong to a known user without accidentally opening up the user's underlying script files or letting people edit their content.
+
+As a side effect, I was also able to add a feature I've been wanting from the beginning: [[https://visualink.mavnn.eu/examples/AloneInTheDark][an example mini-visual novel]] that you can play through without having to sign up or create an account. For bonus points, you can [[https://visualink.mavnn.eu/script/demo][view the script of the example]] in a fully functional editor to get a handle of how Ink works (although you can't save or run your changes unless you set up an account).
+
+Anyway; I'm pretty chuffed about all of this. If you're interested in spreading the joy of writing interactive fiction, I'd love some more example stories to show case, and if you're interested in how my F# code for the server is evolving I'm always up for pull requests and happy to answer questions. In either case, the place to suggest things is at the [[https://github.com/mavnn/VisualInk][project repository]].
+
+If you'd just like to comment on this milestone, then [[https://mastodon.sdf.org/@mavnn/115548826768453925][this mastodon post]] is the place to be.
 * Coding games with a story
 :PROPERTIES:
 :ID:       26BB433F-E0DF-4CF5-88D4-1D8C3A6C0046
@@ -12,14 +25,14 @@ I'm teaming up with the long established and trusted [[https://www.thinkersmeetu
 
 If you know people in that age range who would in interested, or you're wondering what on earth I'm talking about, this video might help!
 
-For those of you who have been following along for a while, you might be worth interested to hear that the course is being powered by an open source website written in F#, including some code that might look very familiar from my previous "dev journals" a year or two back. If you're interested in having a look at what a full (if not huge) F# project looks like, with realistically unpolished code, the repository is at https://github.com/mavnn/VisualInk.
+For those of you who have been following along for a while, you might be more interested to hear that the course is being powered by an open source website written in F#, including some code that might look very familiar from my previous "dev journals" a year or two back. If you're interested in having a look at what a full (if not huge) F# project looks like, with realistically unpolished code, the repository is at https://github.com/mavnn/VisualInk.
 
 Got comments? This [[https://mastodon.sdf.org/@mavnn/115458607249000834][Mastodon post]] is a great place to leave them.
 * Stun lock procrastination
 :PROPERTIES:
 :RSS_PERMALINK: 2025/09/16/stun_lock_procrastination.html
 :PUBDATE:  2025-09-16
-:ID:       A4FEEB99-1608-4610-9132-3281C87D892F
+:ID:       162A7A20-55BB-426A-9804-6D8EE08C13DF
 :END:
 One of the primary markers of ADHD is /not starting/. There are many other aspects, for sure, but often what looks like "hyperactivity" is actually just the noise getting in the way of what we /want/ to be doing but that we haven't started yet.
 
@@ -37,11 +50,11 @@ My default state of procrastination is not the same as John Perry's; he describe
 
 ** I do something for hours, and when I'm next interrupted I wonder "why was I even doing that?"
 :PROPERTIES:
-:ID:       BA5F1AC8-77B5-4502-8EC9-A4D572BE55F7
+:ID:       B047B1AA-2C72-407A-A307-E9F417B73940
 :END:
 ** I realise that I need to do something and I cannot make myself do it so I do /nothing/
 :PROPERTIES:
-:ID:       AC16C70D-58B1-4942-939F-B96959DAB7A5
+:ID:       E596D3E5-F61C-474A-A5E8-1D741870AAA5
 :END:
 
 And on that latter point, I really do mean /nothing/. If I know that I need to do the washing up, but I can't face it, I will "stun lock" sitting on a chair for anything from minutes to multiple hours because washing up is what I /need to do/ and the washing up is what I /cannot do/. I have lost entire days to not being able to face trivial ten minute tasks because they were the crucial thing that needed to get done, and I could not face starting them.
@@ -139,7 +152,7 @@ This post is an attempt to do exactly that.
 
 ** The Effect type
 :PROPERTIES:
-:ID:       1FFCA6E9-D8F8-4B27-B791-7F2EA83F331C
+:ID:       7A1A20A8-DDEC-44BD-AE51-353F04173975
 :END:
 
 The very first thing you need to understand about Effect is that it is built around a specific type.
@@ -191,7 +204,7 @@ There is, however one big difference between these two which will catch you out 
 
 ** Hot and cold promises
 :PROPERTIES:
-:ID:       F417AD5E-5897-429E-9D4F-621941B9B770
+:ID:       78B18CAB-4D47-4D30-8DA0-01A8EF43251F
 :END:
 
 ~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
@@ -250,7 +263,7 @@ that the compiler is least able to warn you about.
 
 ** Pipes
 :PROPERTIES:
-:ID:       8E3782DE-C4BB-4743-977A-EE2B61CF3968
+:ID:       24CB6FFF-476D-4933-8A13-C4597A71FDE9
 :END:
 
 Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.

@@ -32,7 +32,7 @@ Got comments? This [[https://mastodon.sdf.org/@mavnn/115458607249000834][Mastodo
 :PROPERTIES:
 :RSS_PERMALINK: 2025/09/16/stun_lock_procrastination.html
 :PUBDATE:  2025-09-16
-:ID:       162A7A20-55BB-426A-9804-6D8EE08C13DF
+:ID:       5D4D0009-EFA7-4E83-B74D-CC6D6EFE58E8
 :END:
 One of the primary markers of ADHD is /not starting/. There are many other aspects, for sure, but often what looks like "hyperactivity" is actually just the noise getting in the way of what we /want/ to be doing but that we haven't started yet.
 
@@ -50,11 +50,11 @@ My default state of procrastination is not the same as John Perry's; he describe
 
 ** I do something for hours, and when I'm next interrupted I wonder "why was I even doing that?"
 :PROPERTIES:
-:ID:       B047B1AA-2C72-407A-A307-E9F417B73940
+:ID:       25C26746-180F-424B-B006-EEF291428AF5
 :END:
 ** I realise that I need to do something and I cannot make myself do it so I do /nothing/
 :PROPERTIES:
-:ID:       E596D3E5-F61C-474A-A5E8-1D741870AAA5
+:ID:       64C1FB47-3428-4CFE-9B48-2E615870CB68
 :END:
 
 And on that latter point, I really do mean /nothing/. If I know that I need to do the washing up, but I can't face it, I will "stun lock" sitting on a chair for anything from minutes to multiple hours because washing up is what I /need to do/ and the washing up is what I /cannot do/. I have lost entire days to not being able to face trivial ten minute tasks because they were the crucial thing that needed to get done, and I could not face starting them.
@@ -152,7 +152,7 @@ This post is an attempt to do exactly that.
 
 ** The Effect type
 :PROPERTIES:
-:ID:       7A1A20A8-DDEC-44BD-AE51-353F04173975
+:ID:       522BC83D-B4CC-4723-BA87-0A372598208B
 :END:
 
 The very first thing you need to understand about Effect is that it is built around a specific type.
@@ -204,7 +204,7 @@ There is, however one big difference between these two which will catch you out 
 
 ** Hot and cold promises
 :PROPERTIES:
-:ID:       78B18CAB-4D47-4D30-8DA0-01A8EF43251F
+:ID:       5E709282-9E8D-47A0-B3B5-83CC754DA25C
 :END:
 
 ~Promise~ is what is sometimes referred to as a "hot" or "immediate" asynchronous construct. What does that mean?
@@ -263,7 +263,7 @@ that the compiler is least able to warn you about.
 
 ** Pipes
 :PROPERTIES:
-:ID:       24CB6FFF-476D-4933-8A13-C4597A71FDE9
+:ID:       A3A74EA8-BC3F-48D1-8880-A78895F1C927
 :END:
 
 Effect makes heavy usage of a concept it calls "pipes", which is a way of passing a value through a series of functions.

@@ -137,7 +137,7 @@ type VisualInkPlugin() =
 
 This means we replace lines on a 1-1 basis, preserving lint error locations and similar without having to do any complex mapping work.
 
-In our implementation of ~Ink.IFileHandler~ (responsible for finding including Ink files for the compiler), we then add a check for filenames matching the include regular expression above. If it matches, we provide generated content instead of the content of an other actual file.
+In our implementation of ~Ink.IFileHandler~ (responsible for finding included Ink files for the compiler), we then add a check for filenames matching the include regular expression above. If it matches, we provide generated content instead of the content of an other actual file.
 
 The actual Ink code driving the stack is simple, but very verbose. Here's the F# code for generating it:
 

@@ -14,7 +14,7 @@ Ink LISTs are very powerful for capturing flags, but they don't capture the orde
 
 ** What is best in life, sensei?
 :PROPERTIES:
-:ID:       8165CB50-0AC7-410D-8ABB-728B93769805
+:ID:       4D5D8EEF-A241-4F40-AE5F-04229196AA78
 :END:
 
 In the example visual novel Tournament you play a martial artist sent out into the world by your sensei. If you want to try it, you can play it [[https://visualink.mavnn.eu/published/KJtX3GyWGqeciSHmm4j33E76][here]] (it's a couple of minutes long). The novel opens by establishing what is important to your sensei, where you flashback to your training and select what he taught you as foundational, as being important, and as final polish.
@@ -37,14 +37,14 @@ Ideally, it would be trivial to just add the qualities to a variable of some kin
 
 ** Card battler
 :PROPERTIES:
-:ID:       F7A1041D-F61B-430B-8210-84182270A9C3
+:ID:       B720CB58-5065-4FE1-A9AD-4CB0FD1C5C41
 :END:
 
 We discussed in one of the lessons the idea of a 'card battler' mechanic within our visual novels, and quickly realized that keeping track of a deck of cards within Ink that could have cards added to it during the story (especially duplicate cards) would be very hard if not impossible.
 
 ** The solution
 :PROPERTIES:
-:ID:       87F6F55F-D3F8-4D70-9669-4C7B5AD08038
+:ID:       E81494CF-A920-42B2-8149-88CEEF74C373
 :END:
 
 Fortunately, all is not lost. Ink allows compiler plugins, and VisualInk now implements one for STACKs. 
@@ -105,7 +105,7 @@ The push and pop functions also let you know if you're successfully pushing or p
 
 ** The implementation
 :PROPERTIES:
-:ID:       D9AF387B-3EDC-4406-B142-297FC0CC48B9
+:ID:       68F4E0F7-78AD-453E-933B-3A7D9B01E684
 :END:
 
 Things get immediately technical from here on in, so if you just want to use stacks you can feel free to leave at this point! If, on the other hand, you're interested in extending Ink in a larger coding project, here's how I did it.
@@ -152,7 +152,7 @@ The implementation of this is two fold. Firstly, we have a ~IPlugin~ for the Ink
 
 This means we replace lines on a 1-1 basis, preserving lint error locations and similar without having to do any complex mapping work.
 
-In our implementation of ~Ink.IFileHandler~ (responsible for finding including Ink files for the compiler), we then add a check for filenames matching the include regular expression above. If it matches, we provide generated content instead of the content of an other actual file.
+In our implementation of ~Ink.IFileHandler~ (responsible for finding included Ink files for the compiler), we then add a check for filenames matching the include regular expression above. If it matches, we provide generated content instead of the content of an other actual file.
 
 The actual Ink code driving the stack is simple, but very verbose. Here's the F# code for generating it:
 

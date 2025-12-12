@@ -1,0 +1,200 @@
+:PROPERTIES:
+:ID:       F481A812-BAD8-47C3-A0E7-262E298ED5B5
+:END:
+#+TITLE: Stacks in Ink
+
+I'm currently running courses on building visual novels using Ink (with my [[https://visualink.mavnn.eu/][VisualInk]] site providing both editing environment and 'runner'). Shameless plug: if you're looking for an unusual present for a 9-18 year old in your life, you could book them onto one of these courses for next term - [[https://www.thinkersmeetup.com/scholars/michael-newton][link to my page at the course provider]].
+
+I chose Ink because it is brilliant at helping manage the complexity of branching narrative, but in working through the examples in the course there was one particular weakness we came upon. Because Ink is designed to be embedded in a larger game, it deliberately limits the options for state management within the Ink language - that's not the job it is there for. VisualInk, on the other hand, is built on the assumption that the Ink /is/ the game, and it is just providing the sound and visuals.
+
+Ink LISTs are very powerful for capturing flags, but they don't capture the order in which things are added to the list, and they can't contain duplicate values. Let's look at two examples that made us struggle, and then I'll move on to how I'm solving the problem.
+
+** What is best in life, sensei?
+
+In the example visual novel Tournament you play a martial artist sent out into the world by your sensei. If you want to try it, you can play it [[https://visualink.mavnn.eu/published/KJtX3GyWGqeciSHmm4j33E76][here]] (it's a couple of minutes long). The novel opens by establishing what is important to your sensei, where you flashback to your training and select what he taught you as foundational, as being important, and as final polish.
+
+These are the qualities in question:
+
+#+BEGIN_SRC ink
+LIST qualities =
+  strength, skill, control, 
+  speed, honour
+#+END_SRC
+
+Ideally, it would be trivial to just add the qualities to a variable of some kind in order, at which point you'd immediately know which is which. Instead, we end up having to create multiple variables and keep track of which one it is we're filling.
+
+#+BEGIN_SRC ink
+VAR most_important = honour
+VAR important = honour
+VAR least_important = honour
+#+END_SRC
+
+** Card battler
+
+We discussed in one of the lessons the idea of a 'card battler' mechanic within our visual novels, and quickly realized that keeping track of a deck of cards within Ink that could have cards added to it during the story (especially duplicate cards) would be very hard if not impossible.
+
+** The solution
+
+Fortunately, all is not lost. Ink allows compiler plugins, and VisualInk now implements one for STACKs. 
+
+A stack definition consists of a name, a maximum size, and the "empty" value for the stack - the value you'll be given if you ask for a stack slot that isn't filled, or "pop" a value from an empty stack. It allows us to do things like this:
+
+#+BEGIN_SRC ink
+LIST qualities =
+  strength, skill, control, 
+  speed, honour
+
+STACK sensei_values 3 strength
+
+~sensei_values_push(strength)
+~sensei_values_push(skill)
+~sensei_values_push(honour)
+
+// Oops, sensei had a change of heart
+~sensei_values_set(3, speed)
+
+Sensei values {sensei_values_index(1)}, {sensei_values_index(2)}, <>
+{sensei_values_index(3)}.
+
+// Outputs: Sensei values strength, skill, and speed.
+#+END_SRC
+
+As you can see, the stack tracks values being pushed into it, and can change and read values at specific indexes (the first value in at ~1~, not ~0~, for the programmers among you).
+
+The push and pop functions also let you know if you're successfully pushing or popping if that's important. Push returns true for success, and false if the stack is full, while pop will return the "empty" value you specified if the stack has no more values.
+
+#+BEGIN_SRC ink
+STACK cards 2 false
+
+-> draw_card
+
+=== draw_card
+~temp did_draw = cards_push(RANDOM(1, 10))
+{ did_draw:
+  You now have {cards_last} cards in your hand
+  -> draw_card
+- else:
+  Your hand is full
+  -> play_card
+}
+
+=== play_card
+~temp next_card = cards_pop()
+{ next_card == false:
+  You're out of cards!
+  -> END
+- else:
+  You play a {next_card}.
+  -> play_card
+}
+
+// Draws two cards and then plays two cards
+#+END_SRC
+
+** The implementation
+
+Things get immediately technical from here on in, so if you just want to use stacks you can feel free to leave at this point! If, on the other hand, you're interested in extending Ink in a larger coding project, here's how I did it.
+
+The implementation of this is two fold. Firstly, we have a ~IPlugin~ for the Ink compiler that does a simple search and replace on the script provided. It looks for lines in the correct format, and replaces them with ~INCLUDE~ lines with, er, slightly odd filenames.
+
+#+BEGIN_SRC fsharp
+module VisualInk.Server.VisualInkPlugin
+
+open Ink
+open System.Text.RegularExpressions
+
+let private StackDefinitionRegex =
+  Regex(
+    "^STACK\s+(?<label>\w+)\s+(?<size>\d+)\s+(?<nil>.*)$",
+    RegexOptions.Multiline ||| RegexOptions.Compiled
+  )
+
+let private StackIncludeRegex =
+  Regex(
+    "^VisualInkStack (?<label>\w+) (?<size>\d+) (?<nil>.*)$",
+    RegexOptions.Multiline ||| RegexOptions.Compiled
+  )
+
+type PluginInclude =
+    | StackInclude of string * int * string
+
+type VisualInkPlugin() =
+  interface IPlugin with
+    member _.PreParse(storyContent: byref<string>) : unit =
+      storyContent <-
+        StackDefinitionRegex.Replace(
+          storyContent,
+          "INCLUDE VisualInkStack ${label} ${size} ${nil}"
+        )
+
+    member _.PostExport
+      (parsedStory: Parsed.Story, runtimeStory: byref<Runtime.Story>)
+      : unit =
+      ()
+
+    member _.PostParse(parsedStory: byref<Parsed.Story>) : unit = ()
+#+END_SRC
+
+This means we replace lines on a 1-1 basis, preserving lint error locations and similar without having to do any complex mapping work.
+
+In our implementation of ~Ink.IFileHandler~ (responsible for finding including Ink files for the compiler), we then add a check for filenames matching the include regular expression above. If it matches, we provide generated content instead of the content of an other actual file.
+
+The actual Ink code driving the stack is simple, but very verbose. Here's the F# code for generating it:
+
+#+BEGIN_SRC fsharp
+let generatePluginInclude (StackInclude (label, size, nil)) =
+    let last = $"{label}_last"
+    let content = seq {
+      // Set up storage
+      yield $"VAR {label}_size = {size}"
+      yield $"VAR {last} = 0"
+      for i in 1 .. size do
+        yield $"VAR {label}_{i} = {nil}"
+      yield ""
+
+      // Access via index
+      yield $"=== function {label}_index(index)"
+      yield "{ index:"
+      for i in 1 .. size do
+        yield $"  - {i}:"
+        yield $"    ~return {label}_{i}"
+      yield "}"
+      yield ""
+
+      // Set via index
+      yield $"=== function {label}_set(index, value)"
+      yield "{ index:"
+      for i in 1 .. size do
+        yield $"  - {i}:"
+        yield $"    ~{label}_{i} = value"
+      yield "}"
+      yield ""
+
+      // Push
+      yield $"=== function {label}_push(value)"
+      yield $"{{ {last} >= {size}:"
+      yield "  ~return false"
+      yield "- else:"
+      yield $"  ~{last}++"
+      yield $"  ~{label}_set({last}, value)"
+      yield "  ~return true"
+      yield "}"
+
+      // Pop
+      yield $"=== function {label}_pop()"
+      yield $"{{ {last} <= 0:"
+      yield $"  ~return {nil}"
+      yield "- else:"
+      yield $"  ~temp result = {label}_index({last})"
+      yield $"  ~{label}_set({last}, {nil})"
+      yield $"  ~{last}--"
+      yield "  ~return result"
+      yield "}"
+    }
+    content |> String.concat "\n"
+#+END_SRC
+
+I think that's about it for now; at the moment I'm only really expecting this to be a VisualInk specific plugin, so it isn't independently available. If you're an Ink user and you think you'd find it hopeful, I can always package up a sharable version of it. Let me know!
+
+Comments or thoughts? The [[https://bonfire.mavnn.eu/post/01KC9ABBQS9A09RQTX11XT438X#][blog announcement]] post is a good place to leave them!
+

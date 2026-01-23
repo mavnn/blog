@@ -1,0 +1,267 @@
+:PROPERTIES:
+:ID:       515B83EB-713E-4435-8537-705A730C3D15
+:END:
+#+TITLE: Stacks in Ink: Deep dive edition
+
+#+begin_quote
+Warning! This entire blog post is about a *proposed* addition to the Ink language. It is not included in the current official builds of Ink. It may not ever become part of the language, or even if the idea does this specific implementation may not.
+
+To try out the stacks presented here, you can run the examples at [[https://visualink.mavnn.eu/script/demo][VisualInk]] which uses a version of Ink that includes the stack functionality.
+
+To use the 'stack' data type in your own project right now, you would have to either build your own copy of Ink including the changes from [[https://github.com/inkle/ink/pull/969][the proposal pull request]] and [[https://github.com/inkle/ink/pull/971][this bug fix]] or you would need to trust me enough to download the [[https://github.com/mavnn/VisualInk/tree/main/external][pre-compiled versions]] I'm using for the VisualInk server.
+#+end_quote
+
+Last [[id:F481A812-BAD8-47C3-A0E7-262E298ED5B5][time I was blogging]], I wrote about tracking 'ordered data' in Ink by using a compiler extension to generate Ink code. It works, but it doesn't have the most friendly interface in the world and it isn't great from an efficiency point of view either at runtime or in terms of the compiled Ink json output it produces.
+
+So over the Christmas holidays, I thought that I'd see what a fully integrated data type could look like it if were to be added to the actual language design as opposed to layered on top.
+
+Meet the new and improved stack.
+
+* The basics
+
+Stack literals are declared by wrapping a comma separated list of values in square brackets (~[~ / ~]~).
+
+#+begin_src ink
+VAR my_stack = ["hello", "stacks"]
+#+end_src
+
+There's no particular restrictions on what a stack can hold, except when declaring a global variable for the first time when the normal restrictions on not referencing other variables apply.
+
+#+begin_src ink
+VAR my_stack = ["hello", 22, false, -> bananas]
+
+== bananas
+Hmmm. Bananas.
+-> END
+#+end_src
+
+Mixing types up like this in a stack is generally not recommended, but you be you if you want to deal with the headaches it would cause down the line /or/ you know exactly what you're doing and why.
+
+Like most data in Ink, stacks are "immutable". That means if you want to add or remove something from a stack, you create a new stack with items added or removed instead. That sounds complex, but this is already exactly how things like strings and numbers work in Ink.
+
+#+begin_src ink
+VAR my_number = 5
+
+Who is Number 1?
+You are Number {my_number + 1}!
+
+// my_number is still 5, not 6
+
+VAR my_stack = ["strawberries"]
+You eat your {my_stack + "cream"}.
+
+// my_stack is still ["strawberries"]
+#+end_src
+
+We say two stacks are equal if they have the same number of items, and all of the items in the two stacks are equal to each other when compared in order.
+
+#+begin_src ink
+VAR stack1 = ["one", "two"]
+VAR stack2 = ["one", "two"] // equal to stack1
+VAR stack3 = ["two", "one"] // not equal to stack1
+VAR stack4 = ["one"] // not equal to stack1
+#+end_src
+
+And we can 'add' or 'substract' with stacks, although with a slightly different meaning to numerical addition and substraction. Addition concatinates the two stacks (i.e. sticks them together, in order).
+
+#+begin_src ink
+VAR stack1 = ["one", "two"]
+// ["one", "two", "three", "four"]
+{stack1 + ["three", "four"]}
+#+end_src
+
+While subtraction looks for the first time each value in the subtrahend[fn:1] (the stack on the right) appears in the minuend[fn:2] and removes it /if it exists/. It is not an error to 'subtract' a value that isn't in the original stack, it just results in an unchanged stack.
+
+#+begin_src ink
+VAR stack1 = ["three", "one", "one", "two"]
+// In order, we remove the first "one" (leaving the second) then the "three"
+// ["one", "two"]
+{stack1 - ["one", "three"]}
+#+end_src
+
+For the other mathematicians in the audience: these operations are not inverses, and addition is not commutative. I apologize for the brain hurty.
+
+** Example
+
+We've already got something quite nice here for situations where it is important for our story to know if things have been selected in the correct order. Let's say you want to have a runic magic system in your game similar to the one from [[https://crpgaddict.blogspot.com/2010/11/dungeon-master-runic-magic.html][Dungeon Master]]. We can set up a list of valid, meaningful spells easily and add more as needed.
+
+#+BEGIN_SRC ink
+LIST runes = fire, earth, water, air, me, target, explode, weal, woe
+
+VAR fireball = [woe, fire, target, explode]
+VAR heal = [weal, me, water]
+VAR current_cast = []
+
+Time to cast a spell. <>
+
+-> select_rune_or_cast -> END
+
+== select_rune_or_cast
+
+Add a rune, or release the magic! {current_cast}
+
++ [Fire] {add_rune(fire)}
++ [Earth] {add_rune(earth)}
++ [Water] {add_rune(water)}
++ [Air] {add_rune(air)}
++ [Internal] {add_rune(me)}
++ [External] {add_rune(target)}
++ [Explode] {add_rune(explode)}
++ [Weal] {add_rune(weal)}
++ [Woe] {add_rune(woe)}
++ [Cast the spell!] -> cast_spell ->->
+-
+
+-> select_rune_or_cast
+
+=== cast_spell
+{
+- current_cast == fireball:
+  Kaboom!
+- current_cast == heal:
+  Oooh. Refreshing!
+- else:
+  Fizz, buzz
+}
+~current_cast = []
+->->
+
+=== function add_rune(r) ===
+~current_cast += r
+#+END_SRC
+
+** Stack functions
+
+We also have several functions that allow use to work through the values in a stack. 
+
+The simplest is ~STACK_COUNT~ which returns the current number of values in a stack. We then have three variations of the ~STACK_POP~ function; ~STACK_POP_NEWEST~, ~STACK_POP_OLDEST~, and ~STACK_POP_RANDOM~. All three functions work in the same way: they take two parameters, which must be a stack and a variable. They will return the stack with the "popped" value removed, and they will assign the popped value to the variable. They will return a null value if the  stack doesn't contain anything.
+
+Example:
+
+#+begin_src ink
+VAR stack1 = ["oldest item", "middle item", "newest item"]
+VAR popped = ""
+
+~STACK_POP_NEWEST(stack1, popped)
+{popped} // "newest item"
+
+~stack1 = STACK_POP_NEWEST(stack1, popped)
+{popped} // still "newest item" - we didn't update stack1 last time
+{stack1} // now "oldest item, middle item"
+
+~STACK_POP_OLDEST(stack1, popped)
+{popped} // "oldest item"
+
+~stack1 = STACK_POP_RANDOM(stack1, popped)
+{popped} // might be "oldest item" or "middle item"
+{stack1} // a stack with which ever item wasn't popped at random
+#+end_src
+
+We can combine the use of these functions to build knots that work their way through a stack in an order chosen by the player - either directly as below, or implicitly by the choices they made along the way.
+
+Small technical note here: if you want to add (or subtract) diverts with a stack, you'll need to wrap it in square brackets to make sure it can't be confused with other operators such as the minus sign.
+
+#+BEGIN_SRC ink
+    VAR visits = []
+
+    -> pick_visits
+
+    == pick_visits
+
+    Which patient will you visit {first|after that}?
+
+    * [Critically ill guy]
+      ~visits += [-> critical]
+    * [Grazed child]
+      ~visits += [-> grazed]
+    * -> do_rounds
+    -
+
+    -> pick_visits
+
+    == do_rounds
+    {
+    - STACK_COUNT(visits):
+      ~temp next_visit = ""
+      ~visits = STACK_POP_OLDEST(visits, next_visit)
+      -> next_visit -> do_rounds
+    - else:
+      Well, I'm done for the day!
+    }
+
+    -> END
+
+    == critical
+    Check if it is too late.
+    ->->
+
+    == grazed
+    Doesn't matter when you get here.
+    ->->
+#+END_SRC
+
+Possibly most useful of all, is the ability to present a choice for each item in a stack by combining stacks and threads. Going back to our runic magic system, we can automate the spell casting menu system by building it from stacks rather than writing it all out by hand.
+
+This opens up new possibilities; in our next example, the player only has a limited number of owned runes and may need multiple copies of the same rune to activate a spell. This allows us to write narratives where runes are found over time, or can be stolen. It also allows us as game designers to add to the list of runes that exist without having to change any of the underlying mechanics that already exist.
+
+#+begin_src ink
+LIST runes = fire, earth, water, air, protect, attack
+
+VAR ignite = [fire]
+VAR fireball = [fire, fire, attack]
+VAR heal = [protect, water]
+VAR current_cast = []
+VAR owned_runes =  [fire, fire, protect, attack]
+VAR available_runes = []
+
+Time to cast a spell.
+
+-> select_rune_or_cast -> END
+
+== select_rune_or_cast
+
+Add a rune, or release the magic!
+
+~available_runes = owned_runes
+
+-> pick_available_rune(available_runes) ->->
+
+=== pick_available_rune(still_available_runes)
+{
+- STACK_COUNT(still_available_runes):
+  ~temp next_rune = ""
+  ~temp remaining_runes = STACK_POP_NEWEST(still_available_runes, next_rune)
+  <- pick_available_rune(remaining_runes)
+  + [Add {next_rune} to spell]
+    ~add_rune(next_rune)
+    You're currently casting: {current_cast}
+    ~available_runes -= next_rune
+    -> pick_available_rune(available_runes)
+- else:
+  + [Cast the spell!] -> cast_spell ->->
+}
+
+=== cast_spell
+{
+- current_cast == fireball:
+  Kaboom!
+- current_cast == heal:
+  Oooh. Refreshing!
+- else:
+  Fizz, buzz
+}
+~current_cast = []
+->->
+
+=== function add_rune(r) ===
+~current_cast += r
+#+end_src
+
+I'm sure that there are other uses for stacks as well; these are just the use cases that pushed me to looking into implementing them as I already had them in mind. I hope this has given you all some inspiration, and we'll see whether stacks become part of Ink beyond VisualInk in the future or not.
+
+Got any thoughts or suggestions? I suppose on this occasion the best idea is to pop into the Inkle discord and join in the #ink channel (for thoughts on usage) or #ink-engine-dev (for thoughts on the implementation). Be seeing you!
+
+* Footnotes
+[fn:2] This one, too.
+
+[fn:1] Why yes, I did have to look up the word for 'the thing on the right hand side of a subtraction operation' 

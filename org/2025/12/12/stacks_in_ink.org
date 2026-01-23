@@ -91,6 +91,10 @@ STACK cards 2 false
 // Draws two cards and then plays two cards
 #+END_SRC
 
+** I'm not using VisualInk and I don't want to build my own compiler plugin
+
+We have you covered! The plugin is just generating Ink code to include under the hood (see below), and you can get the same code by browsing to [[https://visualink.mavnn.eu/inkTools/cards/2/false]] and copying and pasting the code there into a file to include in your project manually. Just change the last three parts of the address to match what you need.
+
 ** The implementation
 
 Things get immediately technical from here on in, so if you just want to use stacks you can feel free to leave at this point! If, on the other hand, you're interested in extending Ink in a larger coding project, here's how I did it.
